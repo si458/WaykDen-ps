@@ -151,7 +151,7 @@ image::images/den_unattended_machine_list.png[Wayk Den - Unattended Machine List
 
 On another machine, install Wayk Now, and follow the instructions of the previous step for the Wayk Den configuration, with the exception of the unattended machine registration which is not required. When logging in, use "ryoung" as the username and "ryoung123!" as the password.
 
-For the purpose of this guide, this machine will be called "NYOUNG-PC".
+For the purpose of this guide, this machine will be called "RYOUNG-PC".
 
 At this point, you should be able to see both machines connected to the Wayk Den in the "Connections" section:
 
@@ -161,9 +161,9 @@ Each machine is shown as connected twice, because the unattended service and the
 
 From the connection list, we can see that the target ID of "DFORD-PC" is "899769". This target ID is also shown in the Wayk Now main window on DFORD-PC in the "Source ID" field.
 
-On NYOUNG-PC, launch Wayk Now, type "899769" in the "Target ID" field and click "Connect":
+On RYOUNG-PC, launch Wayk Now, type "899769" in the "Target ID" field and click "Connect":
 
-image::images/now_connect_nyoung_to_dford.png[Wayk Now - nyoung connecting to dford]
+image::images/now_connect_ryoung_to_dford.png[Wayk Now - ryoung connecting to dford]
 
 At the login prompt, select "Secure Remote Delegation (SRD)" and enter a valid system username + password for the target machine ("DFORD-PC").
 
