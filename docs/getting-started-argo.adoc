@@ -27,15 +27,15 @@ $ Start-WaykDen
 
 The realm is a domain name for your Wayk Den, very similar to a Windows Active Directory domain name, but it does not need to be a valid DNS domain name. In this case, we use `windjammer.local` for a fictional company called "Windjammer".
 
-Do not open http://localhost:4000 in a browser yet, we will access it through the Argo tunnel instead. We just need Wayk Den to be running first for the Argo tunnel to be opened.
+Do not open http://localhost:4000 in a browser yet. We will access it through the Argo tunnel instead. We just need Wayk Den to be running first for the Argo tunnel to be opened.
 
-Leave this terminal open, we will come back to it later.
+Leave this terminal open: we will come back to it later.
 
 === Step 2: Create free Argo tunnel for external access
 
 https://developers.cloudflare.com/argo-tunnel/downloads/[Download] the `cloudflared` executable for your platform to a known path
 
-Open a new terminal and move to the directory where the `cloudflared` executable is located, then confirm that the tool can be found at command-line:
+Open a new terminal and move to the directory where the `cloudflared` executable is located. Then, confirm that the tool can be found at command-line:
 
 ----
 $ cloudflared --version
@@ -48,7 +48,7 @@ Create a free Argo tunnel pointing to "http://localhost:4000" and wait for it to
 $ cloudflared tunnel --url http://localhost:4000
 ----
 
-Search within the terminal output for your trycloudflare.com generated URL, it should look like this:
+Search within the terminal output for your trycloudflare.com generated URL. It should look like this:
 
 ----
 INFO[0002] +--------------------------------------------------------+  connectionID=0
@@ -81,7 +81,7 @@ That's it! You should now be able to open the external URL in a browser and see 
 
 Now that Wayk Den is running and available externally through an Argo tunnel, you can proceed to creating a first admin user.
 
-Open your external URL ("https://wayk-den-demo-test.trycloudflare.com") in a browser. In a fresh installation, you can login using the "wayk-admin" username and "wayk-admin" password, after which you will be asked to create your first admin user.
+Open your external URL ("https://wayk-den-demo-test.trycloudflare.com") in a browser. In a fresh installation, you can log in using the "wayk-admin" username and "wayk-admin" password, after which you will be asked to create your first admin user.
 
 image::images/den_initial_login.png[Wayk Den initial login]
 
@@ -89,21 +89,21 @@ For the purpose of this guide, we will create the user "admin" with the password
 
 image::images/den_initial_admin.png[Wayk Den initial admin]
 
-If you do not have a fresh database and wish to reset it, you can stop the Wayk Den and run "docker rm den-mongo" and "den volume rm den-mongodata" and start the Wayk Den. We will improve database management soon.
+If you do not have a fresh database and wish to reset it, you can stop the Wayk Den, run "docker rm den-mongo" and "den volume rm den-mongodata" and start the Wayk Den. We will improve database management soon.
 
-Once logged in, you can click on Users from the left navigation menu:
+Once logged in, click Users from the left navigation menu:
 
 image::images/den_user_list_admin.png[Wayk Den user list]
 
-In the top right corner, Click "Add" to create a new user called "David Ford" with username "dford" and password "dford123!":
+In the top right corner, click "Add" to create a user called "David Ford" with username "dford" and password "dford123!":
 
 image::images/den_add_user_dford.png[Wayk Den add user dford]
 
-In the top right corner, Click "Add" to create a new user called "Robert Young" with username "ryoung" and password "ryoung123!":
+In the top right corner, click "Add" to create a user called "Robert Young" with username "ryoung" and password "ryoung123!":
 
 image::images/den_add_user_ryoung.png[Wayk Den add user ryoung]
 
-You should list of users should now look like this:
+Your list of users should now look like this:
 
 image::images/den_user_list_test.png[Wayk Den user list]
 
@@ -123,11 +123,11 @@ In the "Connectivity" section, change the "Wayk Den Server Url" value to your Wa
 
 image::images/now_den_server_url.png[Wayk Now Options - Wayk Den Server URL]
 
-The Wayk Now main window status bar should show a red circle for a few seconds, then it show go back to green when it has connected to the new Wayk Den.
+The Wayk Now main window status bar should show a red circle for a few seconds, then it should go back to green when it has connected to the new Wayk Den.
 
-Go back to the "Connectivity" section of the Options window and unlock it again. Under "Wayk Now User", you should now see a "Login" link. 
+Go back to the "Connectivity" section of the Options window and unlock it again. Under "Wayk Now User", you should now see a "Log in" link. 
 
-Click on "Login" to open the Wayk Den login page with the default system browser. Enter "dford" as the username and "dford123!" as the password, then click Continue.
+Click "Log in" to open the Wayk Den login page with the default system browser. Enter "dford" as the username and "dford123!" as the password, then click Continue.
 
 image::images/now_den_login_user_dford.png[Wayk Den User Login]
 
@@ -149,7 +149,7 @@ image::images/den_unattended_machine_list.png[Wayk Den - Unattended Machine List
 
 === Step 6: Connect to the Windows machine using a Wayk Now client
 
-On another machine, install Wayk Now, and the instructions of the previous step for the Wayk Den configuration, with the exception of the unattended machine registration which is not required. When logging in, use "ryoung" as the username and "ryoung123!" as the password.
+On another machine, install Wayk Now, and follow the instructions of the previous step for the Wayk Den configuration, with the exception of the unattended machine registration which is not required. When logging in, use "ryoung" as the username and "ryoung123!" as the password.
 
 For the purpose of this guide, this machine will be called "NYOUNG-PC".
 
@@ -159,7 +159,7 @@ image::images/den_connection_list_test.png[Wayk Den - Connection List]
 
 Each machine is shown as connected twice, because the unattended service and the Wayk Now client make separate connections to the Wayk Den.
 
-From the connection list, we can see that the target id of "DFORD-PC" is "899769". This target id is also shown in the Wayk Now main window on DFORD-PC in the "Source ID" field.
+From the connection list, we can see that the target ID of "DFORD-PC" is "899769". This target ID is also shown in the Wayk Now main window on DFORD-PC in the "Source ID" field.
 
 On NYOUNG-PC, launch Wayk Now, type "899769" in the "Target ID" field and click "Connect":
 
