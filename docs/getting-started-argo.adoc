@@ -107,6 +107,18 @@ Your list of users should now look like this:
 
 image::images/den_user_list_test.png[Wayk Den user list]
 
+Click on the vertical ellipsis (&#8942;) button to the right of user "dford" to show a contextual action menu, then click "Manage role".
+
+image::images/den_user_action_menu.png[Wayk Den user action menu]
+
+From the list of available roles, select "Machine contributor" then click the '+' sign to add the role to the current user.
+
+image::images/den_user_role_dford_machine_contributor.png[Wayk Den - dford Machine Contributor user role]
+
+This role is required to register new unattended machines in Wayk Den, so you may want to perform the same operation for user "ryoung".
+
+In a regular deployment, we would need to add a valid Wayk Now license in Wayk Den and assign it to users who want to make client connections. However, if you deploy Wayk Den using a https://developers.cloudflare.com/argo-tunnel/trycloudflare/[free cloudflare Argo tunnel] (limited to *.trycloudflare.com URLs), a special demo mode is activated where Wayk Den simulates having a site license configured. This means you can follow this guide without requesting a Wayk Now trial license.
+
 You are now ready to try connecting Wayk Now to your Wayk Den with your test users.
 
 === Step 5: Configure a Windows machine for unattended access
@@ -159,13 +171,15 @@ image::images/den_connection_list_test.png[Wayk Den - Connection List]
 
 Each machine is shown as connected twice, because the unattended service and the Wayk Now client make separate connections to the Wayk Den.
 
-From the connection list, we can see that the target ID of "DFORD-PC" is "899769". This target ID is also shown in the Wayk Now main window on DFORD-PC in the "Source ID" field.
+From the connection list, we can see that the target ID of "DFORD-PC" is "430515". This target ID is also shown in the Wayk Now main window on DFORD-PC in the "Source ID" field.
 
-On RYOUNG-PC, launch Wayk Now, type "899769" in the "Target ID" field and click "Connect":
+On RYOUNG-PC, launch Wayk Now, type "430515" in the "Target ID" field and click "Connect":
 
-image::images/now_connect_ryoung_to_dford.png[Wayk Now - ryoung connecting to dford]
+image::images/now_connect_dford_target.png[Wayk Now - connecting to dford]
 
 At the login prompt, select "Secure Remote Delegation (SRD)" and enter a valid system username + password for the target machine ("DFORD-PC").
+
+image::images/now_connect_dford_login.png[Wayk Now - dford user login]
 
 Once connected, you should now be able to see your active session in the "Sessions" section of the Wayk Den Web UI:
 

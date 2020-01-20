@@ -5,7 +5,7 @@
 
 WaykDen-ps is a PowerShell cmdlet for Wayk Den, the centralized server for https://wayk.devolutions.net[Devolutions Wayk Now]. For assistance or feature requests, please use the https://forum.devolutions.net/#WaykNow[Wayk Now forums] or open a ticket on this github project.
 
-Make sure you have all software prerequisites (see link:Installation[Installation] section) then read our quick link:docs\getting-started-argo.adoc[getting started guide]. Once you have been familiarized with Wayk Den, come back to this page for more details on specific aspects of the software.
+Make sure you have all software prerequisites (<<Installation>> section) then read our quick link:docs\getting-started-argo.adoc[getting started guide]. Once you have been familiarized with Wayk Den, come back to this page for more details on specific aspects of the software.
 
 == Installation
 
