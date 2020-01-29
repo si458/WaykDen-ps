@@ -11,7 +11,7 @@
     RootModule = 'WaykDen.psm1'
     
     # Version number of this module.
-    ModuleVersion = '2020.1.0'
+    ModuleVersion = '2020.1.1'
 
     # Supported PSEditions
     CompatiblePSEditions = 'Desktop', 'Core'
@@ -50,10 +50,12 @@
     # ProcessorArchitecture = ''
     
     # Modules that must be imported into the global environment prior to importing this module
-    # RequiredModules = @()
+    RequiredModules = @(
+        @{ModuleName="powershell-yaml";ModuleVersion="0.4.1";Guid="6a75a662-7f53-425a-9777-ee61284407da"}
+    )
     
     # Assemblies that must be loaded prior to importing this module
-    # RequiredAssemblies = @()
+    RequiredAssemblies = @('bin\PemUtils.dll')
     
     # Script files (.ps1) that are run in the caller's environment prior to importing this module.
     # ScriptsToProcess = @()
@@ -68,13 +70,12 @@
     NestedModules = @('bin\WaykDen.dll')
     
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @('Connect-WaykDenUser', 'Disconnect-WaykDenUser')
+    FunctionsToExport = @('New-WaykDenConfig', 'Set-WaykDenConfig', 'Get-WaykDenConfig',
+        'Import-WaykDenCertificate',
+        'Start-WaykDen', 'Stop-WaykDen', 'Restart-WaykDen')
     
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-    CmdletsToExport = @('New-WaykDenConfig', 'Set-WaykDenConfig', 'Get-WaykDenConfig',
-    'Remove-WaykDenConfig', 'Export-WaykDenConfig',
-    'Start-WaykDen', 'Stop-WaykDen', 'Restart-WaykDen',
-    'Set-WaykDenWebCertificate')
+    CmdletsToExport = @()
     
     # Variables to export from this module
     VariablesToExport = @()
