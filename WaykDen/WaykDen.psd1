@@ -50,12 +50,10 @@
     # ProcessorArchitecture = ''
     
     # Modules that must be imported into the global environment prior to importing this module
-    RequiredModules = @(
-        @{ModuleName="powershell-yaml";ModuleVersion="0.4.1";Guid="6a75a662-7f53-425a-9777-ee61284407da"}
-    )
+    # RequiredModules = @()
     
     # Assemblies that must be loaded prior to importing this module
-    RequiredAssemblies = @('bin\PemUtils.dll')
+    RequiredAssemblies = @('bin\PemUtils.dll', 'bin\YamlDotNet.dll')
     
     # Script files (.ps1) that are run in the caller's environment prior to importing this module.
     # ScriptsToProcess = @()

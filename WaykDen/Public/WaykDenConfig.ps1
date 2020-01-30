@@ -1,5 +1,6 @@
 
 . "$PSScriptRoot/../Private/CaseHelper.ps1"
+. "$PSScriptRoot/../Private/YamlHelper.ps1"
 . "$PSScriptRoot/../Private/TraefikHelper.ps1"
 . "$PSScriptRoot/../Private/RandomGenerator.ps1"
 . "$PSScriptRoot/../Private/CertificateHelper.ps1"
