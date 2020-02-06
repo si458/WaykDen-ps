@@ -136,9 +136,10 @@ function Get-PemCertificate
     )
 
     if (($CertificateFile -match ".pfx") -or ($CertificateFile -match ".p12")) {
-        $CertificateData = Get-Content -Path $CertificateFile -Raw -AsByteStream
+        $AsByteStream = if ($PSEdition -eq 'Core') { @{AsByteStream = $true} } else { @{'Encoding' = 'Byte'} }
+        $CertificateData = Get-Content -Path $CertificateFile -Raw @AsByteStream
         $collection = [System.Security.Cryptography.X509Certificates.X509Certificate2Collection]::new()
-        $collection.Import($CertificateData, $Password, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet)
+        $collection.Import($CertificateData, $Password, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
     
         $PemChain = @()
         $PrivateKey = $null

@@ -5,7 +5,7 @@
 
 WaykDen-ps is a PowerShell cmdlet for Wayk Den, the centralized server for https://wayk.devolutions.net[Devolutions Wayk Now]. For assistance or feature requests, please use the https://forum.devolutions.net/#WaykNow[Wayk Now forums] or open a ticket on this github project.
 
-Make sure you have all software prerequisites (<<Installation>> section) then read our quick link:docs\getting-started-argo.adoc[getting started guide]. Once you have been familiarized with Wayk Den, come back to this page for more details on specific aspects of the software.
+Make sure you have all software prerequisites (<<Installation>> section) then read our quick link:docs\getting-started-argo.adoc[getting started guide (Argo tunnel)] or link:docs\getting-started-azure.adoc[getting started guide (Azure VM)]. Once you have been familiarized with Wayk Den, come back to this page for more details on specific aspects of the software.
 
 == Installation
 
@@ -41,6 +41,15 @@ You can then list all commands exported from the `WaykDen` module:
 Get-Command -Module WaykDen
 ----
 
+When a new version comes out, you can update the cmdlet and restart Wayk Den to upgrade. The updated cmdlet will point to newer versions of the docker containers used in Wayk Den, so upgrading is a simple matter of restarting Wayk Den:
+
+[source,sh]
+----
+Update-Module -Name WaykDen
+Import-Module WaykDen
+Restart-WaykDen
+----
+
 ==== Installation from Source
 
 If you have installed the module from PSGallery, this section is not useful for you. You can jump to the next section. 
@@ -65,19 +74,53 @@ Import-Module "./WaykDen" -Force
 
 Wayk Den is composed of multiple microservices running inside Docker containers. The PowerShell cmdlet simplifies the usage of Docker for users not familiar with it. For more advanced users, the cmdlet can export a usable docker-compose configuration file.
 
-The current version of Wayk Den requires support for Linux containers and bind mounts. Windows containers will be supported in the future.
+==== Windows Server 2019
 
-On Windows, the recommended option is to use https://hub.docker.com/editions/community/docker-ce-desktop-windows[Docker Desktop for Windows]. This version of Docker requires Hyper-V for Linux container support.
+The official way of running Wayk Den on Windows Server is to use the built-in support for Windows containers instead of installing Docker Desktop for Windows and running Linux containers. If you intend to run Wayk Den inside a virtual machine, using Windows Server and Windows containers is the recommended approach because it does not require Docker Desktop for Windows and a Hyper-V virtual machine.
+
+Install or update NuGet and PowerShellGet:
+----
+$ Install-PackageProvider -Name NuGet -Force
+$ Install-Module -Name PowerShellGet -Force
+----
+
+Check if the Windows Server 'Containers' feature is installed, then install it:
+----
+$ Get-WindowsFeature | Where-Object { $_.Name -Like 'Containers' }
+$ Install-WindowsFeature -Name Containers -Restart
+----
+
+Install the Microsoft Docker provider:
+----
+$ Install-Module -Name DockerMsftProvider -Force
+$ Install-Package -Name docker -ProviderName DockerMsftProvider -Force
+----
+
+Start the docker service if it is not currently running:
+----
+$ Get-Service | Where-Object { $_.Name -Like 'docker' }
+$ Start-Service -Name docker
+----
+
+==== Windows 10
+
+On Windows 10, the recommended option is to use https://hub.docker.com/editions/community/docker-ce-desktop-windows[Docker Desktop for Windows]. This version of Docker requires Hyper-V for Linux container support, making it suitable for testing on a physical machine, but not so much for a virtual machine because of limited support of Docker Desktop for Windows in virtualized environments. If you want to try Wayk Den inside a virtual machine, use Windows Server 2019 instead with Windows containers.
 
 For bind mount support with Linux containers on Windows, you need to go in the Docker settings and https://rominirani.com/docker-on-windows-mounting-host-directories-d96f3f056a2c[select the required drives from the "Shared Drives" section].
 
-On macOS and Linux, follow the instructions here to install Docker CE correctly. It is recommended to use the official Docker packages instead as documented in the https://docs.docker.com/install/[Docker install page].
+==== macOS
 
-On Linux, do not forget to https://docs.docker.com/install/linux/linux-postinstall/[add your user to the docker group] after installation.
+On macOS, follow the official https://docs.docker.com/docker-for-mac/[Docker Desktop getting started guide].
+
+==== Linux
+
+On Linux, follow one of the https://docs.docker.com/install/linux/docker-ce/ubuntu/[distribution-specific getting started guides], then do not forget to https://docs.docker.com/install/linux/linux-postinstall/[add your user to the docker group] after installation.
 
 To confirm that Docker is up and running, use the `docker run hello-world` command. If you don't see the "Hello from Docker!" message, something is wrong with your Docker installation.
 
 == Configuration
+
+All Wayk Den commands accept a -ConfigPath parameter to point to a directory where various configuration files are kept. If this parameter is not specified, the current working directory is used by default.
 
 The first step is to create a Wayk Den configuration file with mandatory parameters using the `New-WaykDenConfig` command.
 
@@ -89,8 +132,10 @@ Create a new Wayk Den configuration file, using "contoso.net" as realm and "http
 
 [source, sh]
 ----
-PS > New-WaykDenConfig -Realm contoso.net -ExternalUrl https://den.contoso.net
+PS > New-WaykDenConfig -Realm contoso.net -ExternalUrl https://den.contoso.net -ListenerUrl http://localhost:4000
 ----
+
+The listener url is used to specify the listening protocol and port on the machine where Wayk Den is running. To listen in https, a certificate needs to be imported before changing the listener URL protocol.
 
 === Certificate configuration
 
@@ -112,12 +157,12 @@ Before going any further, check the following points:
 
 [source, sh]
 ----
-PS > Set-WaykDenWebCertificate -CertificatePath /path/to/certificate.pem -PrivateKeyPath /path/to/private_key.key
+PS > Import-WaykDenCertificate -CertificateFile /path/to/certificate.pem -PrivateKeyFile /path/to/private_key.key
 ----
 
 [source, sh]
 ----
-PS > Set-WaykDenWebCertificate -CertificatePath /path/to/certificate.pfx -KeyPassword <password>
+PS > Import-WaykDenCertificate -CertificateFile /path/to/certificate.pfx -Password <password>
 ----
 
 If you want to roll your own certificate authority, you can check link:docs\smallstep-ca.adoc[smallstep ca].
@@ -130,10 +175,42 @@ Set your Jet Relay Url to `https://api.jet-relay.net`:
 
 [source, sh]
 ----
-PS > Set-WaykConfig -JetRelayUrl https://api.jet-relay.net
+PS > Set-WaykDenConfig -JetRelayUrl https://api.jet-relay.net
 ----
 
 Continue your initial configuration, and once you know it is working, come back to the link:docs\devolutions-jet.adoc[Devolutions Jet] page for more information on how to deploy your own relays.
+
+== Data Persistence
+
+Aside from the Wayk Den configuration files, all Wayk Den data is stored inside a https://www.mongodb.com[MongoDB database]. If you do not specify a database, a simple MongoDB container will be launched with a docker volume attached to it. While this is fine for a lot of use cases, using a single MongoDB container instance is not suitable for high availability scenarios.
+
+To point Wayk Den to an existing MongoDB server, you need to configure a database connection string, and set MongoDB as external to avoid launching a MongoDB container instance:
+
+----
+PS > Set-WaykDenConfig -MongoExternal $true -MongoUrl 'mongodb://mongo-server:27017'
+----
+
+=== Database Backup
+
+MongoDB database backups can be done using the https://docs.mongodb.com/manual/reference/program/mongodump/[`mongodump` command-line tool]. For simplicity, the `Backup-WaykDenData` command can be used to streamline the process:
+
+----
+PS > Backup-WaykDenData -BackupPath .\den-backup.tgz -Verbose
+----
+
+The `Backup-WaykDenData` is only usable with a non-external MongoDB database. You can add the `-Verbose` parameter to show the docker commands used to call `mongodump` inside a container for reference.
+
+=== Database Restore
+
+A MongoDB database can be restored from a backup using the https://docs.mongodb.com/manual/reference/program/mongorestore/[`mongorestore` command-line tool]. For obvious reasons, you should be careful about restoring a database, as the operation will overwrite the current data and replace it with the one from the backup.
+
+Just like `Backup-WaykDenData`, `Restore-WaykDenData` should only be used with a non-external MongoDB database. A proper restore involves stopping Wayk Den, restoring data from the backup file, then restarting Wayk Den. Since Stop-WaykDen stops the database container, `Restore-WaykDenData` will automatically start it for the restore operation.
+
+----
+PS > Stop-WaykDen
+PS > Restore-WaykDenData -BackupPath .\den-backup.tgz -Verbose
+PS > Restart-WaykDen
+----
 
 == Running
 
@@ -167,7 +244,7 @@ PS > Stop-WaykDen
 
 === User Management
 
-User using Wayk Now client can log in to be authenticated with Wayk Den Server. The server, by default, will provide a Wayk Den ID to any user who wants to connect to it. The server can be configured in a way forcing the user to be authenticated to accept a connection with the server. The command `Set-WaykDenConfig -LoginRequired True` can be used to force users to log in.
+User using Wayk Now client can log in to be authenticated with Wayk Den Server. The server, by default, will provide a Wayk Den ID to any user who wants to connect to it.
 
 To authenticate user, Wayk Den can be configured to use a specific user group through LDAP integration. Two options are supported: Active Directory and JumpCloud. 
 
@@ -175,11 +252,11 @@ In order to fetch user and group information, a user with read-only LDAP access 
 
 ==== Active Directory
 
-To integrate Active Directory, here are the information needed:
+To integrate Active Directory, here is a list of the required parameters:
 
-* LDAP server url: ldap://_server_ip_ 
-* LDAP user credentials: username and password
-* LDAP user group (optional)
+* LdapServerUrl: ldap://_ldap-server_
+* LdapUsername, LdapPassword
+* LdapUserGroup (optional)
 
 It is important to specify the server IP since there is not DNS resolution in the docker container. The user used should be a user with only read-only access. A section below explains how to create a such user. Finally, the user group is not mandatory. If it is not specified, all users will be accepted. If it is specified, only users from that group will be able to be authenticated.
 
@@ -187,7 +264,7 @@ The following command will set LDAP property value for active directory.
 
 [source, sh]
 ----
-Set-WaykDenConfig -LDAPServerType ActiveDirectory -LDAPUsername ldap-user@contoso.local -LDAPPassword ldap-password -LDAPServerUrl ldap://ldap-server -LDAPUserGroup 'Domain Users'
+Set-WaykDenConfig -LdapServerType ActiveDirectory -LdapUsername ldap-user@contoso.local -LdapPassword ldap-password -LdapServerUrl ldap://ldap-server -LdapUserGroup 'Domain Users'
 ---- 
 
 ===== User creation with read-only access
@@ -200,12 +277,12 @@ First, a new group has to be created, let's say "Read-only Users". Then a new us
 
 https://jumpcloud.com/[JumpCloud] is a cloud service who help you to centralize user management. You can create users and groups then use the service call "LDAP-as-a-Service" to access those users and groups from WaykDen. You can read more on https://support.jumpcloud.com/customer/en/portal/articles/2439911-using-jumpcloud-s-ldap-as-a-service[how to use JumpCloud's LDAP-as-a-Service]. 
 
-To integrate Jump Cloud with Wayk Den, here are the information needed :
+To integrate Jump Cloud with Wayk Den, here is a list of the required parameters:
 
-* LDAP server url : ldaps://ldap.jumpcloud.com:636
-* LDAP user credential: username and password
-* LDAP Base DN: Distinguised Name where to retrieve users and groups
-* LDAP user group (optional)
+* LdapServerUrl (ldaps://ldap.jumpcloud.com:636)
+* LdapUsername, LdapPassword
+* LdapBaseDn: Distinguished Name to retrieve users and groups
+* LdapUserGroup (optional)
 
 The LDAP server url should be set to ldaps://ldap.jumpcloud.com:636. JumpCloud provide a non secure access as well, but we don't recommand it. A user who can read the ldap directory should be created following steps https://support.jumpcloud.com/customer/en/portal/articles/2439911-using-jumpcloud-s-ldap-as-a-service#createuser[here]. The username has to be provided with the Distinguished Name (DN), something like `uid=_LDAP_BINDING_USER_,ou=Users,o=_YOUR_ORG_ID_,dc=jumpcloud,dc=com`. The base DN is similar and should be set to `ou=Users,o=_YOUR_ORG_ID_,dc=jumpcloud,dc=com`. Finally, a user group name can be specified to limit user to that group.
 
@@ -213,5 +290,5 @@ The following command will set LDAP property value for JumpCloud.
 
 [source, sh]
 ----
-Set-WaykDenConfig -LDAPServerType JumpCloud -LDAPUsername "uid=ldap-user,ou=Users,o=YOUR_ORG_ID,dc=jumpcloud,dc=com" -LDAPPassword ldap-password -LDAPServerUrl ldaps://ldap.jumpcloud.com:636 -LDAPBaseDn "ou=Users,o=YOUR_ORG_ID,dc=jumpcloud,dc=com -LDAPUserGroup wayk-users"
+Set-WaykDenConfig -LdapServerType JumpCloud -LdapUsername "uid=ldap-user,ou=Users,o=YOUR_ORG_ID,dc=jumpcloud,dc=com" -LdapPassword ldap-password -LdapServerUrl ldaps://ldap.jumpcloud.com:636 -LdapBaseDn "ou=Users,o=YOUR_ORG_ID,dc=jumpcloud,dc=com -LdapUserGroup wayk-users"
 ----

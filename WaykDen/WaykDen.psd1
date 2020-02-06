@@ -11,7 +11,7 @@
     RootModule = 'WaykDen.psm1'
     
     # Version number of this module.
-    ModuleVersion = '2020.1.1'
+    ModuleVersion = '2020.1.2'
 
     # Supported PSEditions
     CompatiblePSEditions = 'Desktop', 'Core'
@@ -70,7 +70,8 @@
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
     FunctionsToExport = @('New-WaykDenConfig', 'Set-WaykDenConfig', 'Get-WaykDenConfig',
         'Import-WaykDenCertificate',
-        'Start-WaykDen', 'Stop-WaykDen', 'Restart-WaykDen')
+        'Start-WaykDen', 'Stop-WaykDen', 'Restart-WaykDen',
+        'Backup-WaykDenData', 'Restore-WaykDenData')
     
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
     CmdletsToExport = @()

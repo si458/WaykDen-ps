@@ -11,21 +11,25 @@ function Get-WaykDenImage
 
     $images = if ($Platform -ne "windows") {
         [ordered]@{ # Linux containers
-            "den-mongo" = "library/mongo:4.1-bionic";
             "den-lucid" = "devolutions/den-lucid:3.6.5-buster";
             "den-picky" = "devolutions/picky:4.2.1-buster";
             "den-server" = "devolutions/den-server:1.9.0-buster";
+
+            "den-mongo" = "library/mongo:4.2-bionic";
             "den-traefik" = "library/traefik:1.7";
-            "den-redis" = "library/redis:5.0-buster";
             "den-nats" = "library/nats:2.1-linux";
+            "den-redis" = "library/redis:5.0-buster";
         }
     } else {
         [ordered]@{ # Windows containers
-            "den-mongo" = "devolutions/mongo:4.0.12-servercore-ltsc2019";
             "den-lucid" = "devolutions/den-lucid:3.6.5-servercore-ltsc2019";
             "den-picky" = "devolutions/picky:4.2.1-servercore-ltsc2019";
             "den-server" = "devolutions/den-server:1.9.0-servercore-ltsc2019";
-            "den-traefik" = "sixeyed/traefik:v1.7.8-windowsservercore-ltsc2019";
+
+            "den-mongo" = "library/mongo:4.2-windowsservercore-1809";
+            "den-traefik" = "library/traefik:1.7-windowsservercore-1809";
+            "den-nats" = "library/nats:2.1-windowsservercore-1809";
+            "den-redis" = ""; # not available
         }
     }
 
@@ -35,13 +39,11 @@ function Get-WaykDenImage
 function Get-WaykDenService
 {
     param(
-        [string] $Path,
+        [string] $ConfigPath,
         [WaykDenConfig] $Config
     )
 
-    if ([string]::IsNullOrEmpty($Path)) {
-        $Path = Get-Location
-    }
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
 
     $Platform = $config.DockerPlatform
     $images = Get-WaykDenImage -Platform:$Platform
@@ -64,8 +66,8 @@ function Get-WaykDenService
     $LucidAdminUsername = $config.LucidAdminUsername
     $LucidAdminSecret = $config.LucidAdminSecret
 
-    $DenPickyUrl = $config.DenPickyUrl
-    $DenLucidUrl = $config.DenLucidUrl
+    $PickyUrl = $config.PickyUrl
+    $LucidUrl = $config.LucidUrl
     $DenServerUrl = $config.DenServerUrl
 
     if ($Platform -eq "linux") {
@@ -81,10 +83,8 @@ function Get-WaykDenService
     }
 
     $ServerCount = 1
-    if (![string]::IsNullOrEmpty($config.ServerCount)) {
-        if ([int] $config.ServerCount -gt 1) {
-            $ServerCount = [int] $config.ServerCount
-        }
+    if ([int] $config.ServerCount -gt 1) {
+        $ServerCount = [int] $config.ServerCount
     }
 
     $Services = @()
@@ -96,27 +96,28 @@ function Get-WaykDenService
     $DenMongo.Platform = $Platform
     $DenMongo.Networks += $DenNetwork
     $DenMongo.Volumes = @("$MongoVolume`:$MongoDataPath")
+    $DenMongo.External = $config.MongoExternal
     $Services += $DenMongo
 
     if (($config.ServerMode -eq 'Public') -or ($ServerCount -gt 1)) {
 
-        if ([string]::IsNullOrEmpty($config.NatsUrl)) {
+        if (-Not $config.NatsUrl) {
             $config.NatsUrl = "den-nats"
         }
 
-        if ([string]::IsNullOrEmpty($config.NatsUsername)) {
+        if (-Not $config.NatsUsername) {
             $config.NatsUsername = New-RandomString -Length 16
         }
 
-        if ([string]::IsNullOrEmpty($config.NatsPassword)) {
+        if (-Not $config.NatsPassword) {
             $config.NatsPassword = New-RandomString -Length 16
         }
     
-        if ([string]::IsNullOrEmpty($config.RedisUrl)) {
+        if (-Not $config.RedisUrl) {
             $config.RedisUrl = "den-redis"
         }
 
-        if ([string]::IsNullOrEmpty($config.RedisPassword)) {
+        if (-Not $config.RedisPassword) {
             $config.RedisPassword = New-RandomString -Length 16
         }
 
@@ -127,6 +128,7 @@ function Get-WaykDenService
         $DenNats.Platform = $Platform
         $DenNats.Networks += $DenNetwork
         $DenNats.Command = "--user $($config.NatsUsername) --pass $($config.NatsPassword)"
+        $DenNats.External = $config.NatsExternal
         $Services += $DenNats
 
         # den-redis service
@@ -136,6 +138,7 @@ function Get-WaykDenService
         $DenRedis.Platform = $Platform
         $DenRedis.Networks += $DenNetwork
         $DenRedis.Command = "redis-server --requirepass $($config.RedisPassword)"
+        $DenRedis.External = $config.RedisExternal
         $Services += $DenRedis
     }
 
@@ -151,6 +154,7 @@ function Get-WaykDenService
         "PICKY_API_KEY" = $PickyApiKey;
         "PICKY_DATABASE_URL" = $MongoUrl;
     }
+    $DenPicky.External = $config.PickyExternal
     $Services += $DenPicky
 
     # den-lucid service
@@ -172,7 +176,8 @@ function Get-WaykDenService
         "LUCID_ACCOUNT__FORGOT_PASSWORD_URL" = "$DenServerUrl/account/forgot";
         "LUCID_ACCOUNT__SEND_ACTIVATION_EMAIL_URL" = "$DenServerUrl/account/activation";
     }
-    $DenLucid.Healthcheck = [DockerHealthcheck]::new("curl -sS $DenLucidUrl/health")
+    $DenLucid.Healthcheck = [DockerHealthcheck]::new("curl -sS $LucidUrl/health")
+    $DenLucid.External = $config.LucidExternal
     $Services += $DenLucid
 
     # den-server service
@@ -184,12 +189,12 @@ function Get-WaykDenService
     $DenServer.Networks += $DenNetwork
     $DenServer.Environment = [ordered]@{
         "PICKY_REALM" = $Realm;
-        "PICKY_URL" = $DenPickyUrl;
+        "PICKY_URL" = $PickyUrl;
         "PICKY_APIKEY" = $PickyApiKey; # will be changed to PICKY_API_KEY
         "DB_URL" = $MongoUrl; # will be changed to MONGO_URL
         "LUCID_AUTHENTICATION_KEY" = $LucidApiKey;
         "DEN_ROUTER_EXTERNAL_URL" = "$ExternalUrl/cow";
-        "LUCID_INTERNAL_URL" = $DenLucidUrl;
+        "LUCID_INTERNAL_URL" = $LucidUrl;
         "LUCID_EXTERNAL_URL" = "$ExternalUrl/lucid";
         "DEN_LOGIN_REQUIRED" = "false";
         "DEN_PUBLIC_KEY_FILE" = @($DenServerDataPath, "den-public.pem") -Join $PathSeparator
@@ -198,7 +203,7 @@ function Get-WaykDenService
         "JET_RELAY_URL" = $JetRelayUrl;
         "DEN_API_KEY" = $DenApiKey;
     }
-    $DenServer.Volumes = @("$Path/den-server:$DenServerDataPath`:ro")
+    $DenServer.Volumes = @("$ConfigPath/den-server:$DenServerDataPath`:ro")
     $DenServer.Command = "-l trace"
     $DenServer.Healthcheck = [DockerHealthcheck]::new("curl -sS $DenServerUrl/health")
 
@@ -253,6 +258,8 @@ function Get-WaykDenService
         $DenServer.Environment['REDIS_PASSWORD'] = $config.RedisPassword
     }
 
+    $DenServer.External = $config.ServerExternal
+
     if ($ServerCount -gt 1) {
         1 .. $ServerCount | % {
             $ServerIndex = $_
@@ -271,7 +278,7 @@ function Get-WaykDenService
     $DenTraefik.Image = $images[$DenTraefik.ContainerName]
     $DenTraefik.Platform = $Platform
     $DenTraefik.Networks += $DenNetwork
-    $DenTraefik.Volumes = @("$Path/traefik:$TraefikDataPath")
+    $DenTraefik.Volumes = @("$ConfigPath/traefik:$TraefikDataPath")
     $DenTraefik.Command = ("--file --configFile=" + $(@($TraefikDataPath, "traefik.toml") -Join $PathSeparator))
     $DenTraefik.Ports = @("$TraefikPort`:$TraefikPort")
     $Services += $DenTraefik
@@ -285,111 +292,6 @@ function Get-WaykDenService
     return $Services
 }
 
-class DockerHealthcheck
-{
-    [string] $Test
-    [string] $Interval
-    [string] $Timeout
-    [string] $Retries
-    [string] $StartPeriod
-
-    DockerHealthcheck() { }
-
-    DockerHealthcheck([string] $Test) {
-        $this.Test = $Test
-        $this.Interval = "5s"
-        $this.Timeout = "2s"
-        $this.Retries = "5"
-        $this.StartPeriod = "1s"
-    }
-
-    DockerHealthcheck([DockerHealthcheck] $other) {
-        $this.Test = $other.Test
-        $this.Interval = $other.Interval
-        $this.Timeout = $other.Timeout
-        $this.Retries = $other.Retries
-        $this.StartPeriod = $other.StartPeriod
-    }
-}
-
-class DockerLogging
-{
-    [string] $Driver
-    [Hashtable] $Options
-
-    DockerLogging() { }
-
-    DockerLogging([string] $SyslogAddress) {
-        $this.Driver = "syslog"
-        $this.Options = [ordered]@{
-            'syslog-format' = 'rfc5424'
-            'syslog-facility' = 'daemon'
-            'syslog-address' = $SyslogAddress
-        }
-    }
-
-    DockerLogging([DockerLogging] $other) {
-        $this.Driver = $other.Driver
-
-        if ($other.Options) {
-            $this.Options = $other.Options.Clone()
-        }
-    }
-}
-
-class DockerService
-{
-    [string] $Image
-    [string] $Platform
-    [string] $ContainerName
-    [string[]] $DependsOn
-    [string[]] $Networks
-    [Hashtable] $Environment
-    [string[]] $Volumes
-    [string] $Command
-    [string[]] $Ports
-    [DockerHealthcheck] $Healthcheck
-    [DockerLogging] $Logging
-
-    DockerService() { }
-
-    DockerService([DockerService] $other) {
-        $this.Image = $other.Image
-        $this.Platform = $other.Platform
-        $this.ContainerName = $other.ContainerName
-
-        if ($other.DependsOn) {
-            $this.DependsOn = $other.DependsOn.Clone()
-        }
-
-        if ($other.Networks) {
-            $this.Networks = $other.Networks.Clone()
-        }
-
-        if ($other.Environment) {
-            $this.Environment = $other.Environment.Clone()
-        }
-
-        if ($other.Volumes) {
-            $this.Volumes = $other.Volumes.Clone()
-        }
-    
-        $this.Command = $other.Command
-
-        if ($other.Ports) {
-            $this.Ports = $other.Ports.Clone()
-        }
-
-        if ($other.Healthcheck) {
-            $this.Healthcheck = [DockerHealthcheck]::new($other.Healthcheck)
-        }
-     
-        if ($other.Logging)  {
-            $this.Logging = [DockerLogging]::new($other.Logging)
-        }
-    }
-}
-
 function Get-DockerRunCommand
 {
     [OutputType('string[]')]
@@ -398,6 +300,8 @@ function Get-DockerRunCommand
     )
 
     $cmd = @('docker', 'run')
+
+    $cmd += @('--name', $Service.ContainerName)
 
     $cmd += "-d" # detached
 
@@ -459,7 +363,7 @@ function Get-DockerRunCommand
         $cmd += "--log-opt=" + $options
     }
 
-    $cmd += @('--name', $Service.ContainerName, $Service.Image)
+    $cmd += $Service.Image
     $cmd += $Service.Command
 
     return $cmd
@@ -467,27 +371,41 @@ function Get-DockerRunCommand
 
 function Start-DockerService
 {
+    [CmdletBinding()]
     param(
         [DockerService] $Service,
-        [switch] $Remove,
-        [switch] $Verbose
+        [switch] $Remove
     )
+
+    if ($Service.External) {
+        return # service should already be running
+    }
 
     if (Get-ContainerExists -Name $Service.ContainerName) {
         if (Get-ContainerIsRunning -Name $Service.ContainerName) {
-            docker stop $Service.ContainerName | Out-Null
+            Stop-Container -Name $Service.ContainerName
         }
 
         if ($Remove) {
-            docker rm $Service.ContainerName | Out-Null
+            Remove-Container -Name $Service.ContainerName
+        }
+    }
+
+    # Workaround for https://github.com/docker-library/mongo/issues/385
+    if (($Service.Platform -eq 'Windows') -and ($Service.ContainerName -Like '*mongo')) {
+        $VolumeName = $($Service.Volumes[0] -Split ':', 2)[0]
+        $Volume = $(docker volume inspect $VolumeName) | ConvertFrom-Json
+        $WiredTigerLock = Join-Path $Volume.MountPoint 'WiredTiger.lock'
+        if (Test-Path $WiredTigerLock) {
+            Write-Host "Removing $WiredTigerLock"
+            Remove-Item $WiredTigerLock -Force
         }
     }
 
     $RunCommand = (Get-DockerRunCommand -Service $Service) -Join " "
 
-    if ($Verbose) {
-        Write-Host $RunCommand
-    }
+    Write-Host "Starting $($Service.ContainerName)"
+    Write-Verbose $RunCommand
 
     $id = Invoke-Expression $RunCommand
 
@@ -495,32 +413,36 @@ function Start-DockerService
         Wait-ContainerHealthy -Name $Service.ContainerName | Out-Null
     }
 
-    if (Get-ContainerIsRunning -Name $Service.ContainerName){
+    if (Get-ContainerIsRunning -Name $Service.ContainerName) {
         Write-Host "$($Service.ContainerName) successfully started"
     } else {
-        Write-Error -Message "Error starting $($Service.ContainerName)"
+        throw "Error starting $($Service.ContainerName)"
     }
 }
 
 function Start-WaykDen
 {
+    [CmdletBinding()]
     param(
-        [string] $Path,
-        [switch] $Verbose
+        [string] $ConfigPath,
+        [switch] $SkipPull
     )
 
-    $config = Get-WaykDenConfig -Path:$Path
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
+    $config = Get-WaykDenConfig -ConfigPath:$ConfigPath
     Expand-WaykDenConfig -Config $config
 
     $Platform = $config.DockerPlatform
-    $Services = Get-WaykDenService -Path:$Path -Config $config
+    $Services = Get-WaykDenService -ConfigPath:$ConfigPath -Config $config
 
     # update traefik.toml
-    Export-TraefikToml -Path:$Path
+    Export-TraefikToml -ConfigPath:$ConfigPath
 
-    # pull docker images
-    foreach ($service in $services) {
-        docker pull $service.Image | Out-Null
+    if (-Not $SkipPull) {
+        # pull docker images
+        foreach ($service in $services) {
+            Request-ContainerImage -Name $Service.Image
+        }
     }
 
     # create docker network
@@ -531,41 +453,49 @@ function Start-WaykDen
 
     # start containers
     foreach ($Service in $Services) {
-        Start-DockerService -Service $Service -Remove -Verbose:$Verbose
+        Start-DockerService -Service $Service -Remove
     }
 }
 
 function Stop-WaykDen
 {
+    [CmdletBinding()]
     param(
-        [string] $Path,
+        [string] $ConfigPath,
         [switch] $Remove
     )
 
-    $config = Get-WaykDenConfig -Path:$Path
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
+    $config = Get-WaykDenConfig -ConfigPath:$ConfigPath
     Expand-WaykDenConfig -Config $config
 
-    $Services = Get-WaykDenService -Path:$Path -Config $config
+    $Services = Get-WaykDenService -ConfigPath:$ConfigPath -Config $config
 
     # stop containers
     foreach ($Service in $Services) {
+        if ($Service.External) {
+            continue
+        }
+
         Write-Host "Stopping $($Service.ContainerName)"
-        docker stop $Service.ContainerName | Out-Null
+        Stop-Container -Name $Service.ContainerName -Quiet
 
         if ($Remove) {
-            docker rm $Service.ContainerName | Out-Null
+            Remove-Container -Name $Service.ContainerName
         }
     }
 }
 
 function Restart-WaykDen
 {
+    [CmdletBinding()]
     param(
-        [string] $Path
+        [string] $ConfigPath
     )
 
-    Stop-WaykDen -Path:$Path
-    Start-WaykDen -Path:$Path
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
+    Stop-WaykDen -ConfigPath:$ConfigPath
+    Start-WaykDen -ConfigPath:$ConfigPath
 }
 
 Export-ModuleMember -Function Start-WaykDen, Stop-WaykDen, Restart-WaykDen

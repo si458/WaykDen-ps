@@ -7,18 +7,25 @@
 
 class WaykDenConfig
 {
-    # Server
+    # DenServer
     [string] $Realm
     [string] $ExternalUrl
     [string] $ListenerUrl
     [string] $ServerMode
-    [string] $ServerCount
+    [int] $ServerCount
+    [string] $DenServerUrl
+    [string] $DenRouterUrl
+    [string] $DenApiKey
+    [bool] $ServerExternal
 
     # MongoDB
     [string] $MongoUrl
+    [string] $MongoVolume
+    [bool] $MongoExternal
 
     # Jet
     [string] $JetRelayUrl
+    [string] $JetServerUrl
 
     # LDAP
     [string] $LdapServerUrl
@@ -28,66 +35,72 @@ class WaykDenConfig
     [string] $LdapServerType
     [string] $LdapBaseDn
 
+    # Picky
+    [string] $PickyUrl
+    [string] $PickyApiKey
+    [bool] $PickyExternal
+
+    # Lucid
+    [string] $LucidUrl
+    [string] $LucidApiKey
+    [string] $LucidAdminUsername
+    [string] $LucidAdminSecret
+    [bool] $LucidExternal
+
     # NATS
     [string] $NatsUrl
     [string] $NatsUsername
     [string] $NatsPassword
+    [bool] $NatsExternal
     
     # Redis
     [string] $RedisUrl
     [string] $RedisPassword
+    [bool] $RedisExternal
 
-    # Internal API keys
-    [string] $DenApiKey
-    [string] $PickyApiKey
-    [string] $LucidApiKey
-    [string] $LucidAdminUsername
-    [string] $LucidAdminSecret
-
-    # Internal settings
+    # Docker
     [string] $DockerNetwork
     [string] $DockerPlatform
     [string] $SyslogServer
-    [string] $MongoVolume
-    [string] $JetServerUrl
-    [string] $DenPickyUrl
-    [string] $DenLucidUrl
-    [string] $DenServerUrl
-    [string] $DenRouterUrl
 }
 
-function Set-ConfigString
+function Find-WaykDenConfig
 {
     param(
-        [Parameter(Position=0)]
-        $config,
-        [Parameter(Position=1)]
-        [string] $Name,
-        [Parameter(Position=2)]
-        [string] $Value
+        [string] $ConfigPath
     )
 
-    if (![string]::IsNullOrEmpty($Value)) {
-        $config.$Name = $Value
+    if (-Not $ConfigPath) {
+        $ConfigPath = Get-Location
     }
+
+    return $ConfigPath
 }
 
-function Get-ConfigString
+function Expand-WaykDenConfigKeys
 {
-    [OutputType('System.String')]
     param(
-        [Parameter(Position=0)]
-        $yaml,
-        [Parameter(Position=1)]
-        [string] $Name
+        [WaykDenConfig] $Config
     )
 
-    $Name = ConvertTo-SnakeCase -Value $Name
+    if (-Not $config.DenApiKey) {
+        $config.DenApiKey = New-RandomString -Length 32
+    }
 
-    if (![string]::IsNullOrEmpty($yaml.$Name)) {
-        return ($yaml.$Name | Out-String).Trim()
-    } else {
-        return $null
+    if (-Not $config.PickyApiKey) {
+        $config.PickyApiKey = New-RandomString -Length 32
+    }
+
+    if (-Not $config.LucidApiKey) {
+        $config.LucidApiKey = New-RandomString -Length 32
+    }
+
+    if (-Not $config.LucidAdminUsername) {
+        $config.LucidAdminUsername = New-RandomString -Length 16
+    }
+
+    if (-Not $config.LucidAdminSecret) {
+        $config.LucidAdminSecret = New-RandomString -Length 10
     }
 }
 
@@ -104,16 +117,16 @@ function Expand-WaykDenConfig
     $ListenerUrlDefault = "http://0.0.0.0:4000"
     $JetServerUrlDefault = "api.jet-relay.net:8080"
     $JetRelayUrlDefault = "https://api.jet-relay.net"
-    $DenPickyUrlDefault = "http://den-picky:12345"
-    $DenLucidUrlDefault = "http://den-lucid:4242"
+    $PickyUrlDefault = "http://den-picky:12345"
+    $LucidUrlDefault = "http://den-lucid:4242"
     $DenServerUrlDefault = "http://den-server:10255"
     $DenRouterUrlDefault = "http://den-server:4491"
 
-    if ([string]::IsNullOrEmpty($config.DockerNetwork)) {
+    if (-Not $config.DockerNetwork) {
         $config.DockerNetwork = $DockerNetworkDefault
     }
 
-    if ([string]::IsNullOrEmpty($config.DockerPlatform)) {
+    if (-Not $config.DockerPlatform) {
         if (Get-IsWindows) {
             $config.DockerPlatform = "windows"
         } else {
@@ -121,47 +134,47 @@ function Expand-WaykDenConfig
         }
     }
 
-    if ([string]::IsNullOrEmpty($config.ServerMode)) {
+    if (-Not $config.ServerMode) {
         $config.ServerMode = $ServerModeDefault
     }
 
-    if ([string]::IsNullOrEmpty($config.ServerCount)) {
+    if (-Not $config.ServerCount) {
         $config.ServerCount = 1
     }
 
-    if ([string]::IsNullOrEmpty($config.ListenerUrl)) {
+    if (-Not $config.ListenerUrl) {
         $config.ListenerUrl = $ListenerUrlDefault
     }
 
-    if ([string]::IsNullOrEmpty($config.MongoUrl)) {
+    if (-Not $config.MongoUrl) {
         $config.MongoUrl = $MongoUrlDefault
     }
 
-    if ([string]::IsNullOrEmpty($config.MongoVolume)) {
+    if (-Not $config.MongoVolume) {
         $config.MongoVolume = $MongoVolumeDefault
     }
 
-    if ([string]::IsNullOrEmpty($config.JetServerUrl)) {
+    if (-Not $config.JetServerUrl) {
         $config.JetServerUrl = $JetServerUrlDefault
     }
 
-    if ([string]::IsNullOrEmpty($config.JetRelayUrl)) {
+    if (-Not $config.JetRelayUrl) {
         $config.JetRelayUrl = $JetRelayUrlDefault
     }
 
-    if ([string]::IsNullOrEmpty($config.DenPickyUrl)) {
-        $config.DenPickyUrl = $DenPickyUrlDefault
+    if (-Not $config.PickyUrl) {
+        $config.PickyUrl = $PickyUrlDefault
     }
 
-    if ([string]::IsNullOrEmpty($config.DenLucidUrl)) {
-        $config.DenLucidUrl = $DenLucidUrlDefault
+    if (-Not $config.LucidUrl) {
+        $config.LucidUrl = $LucidUrlDefault
     }
 
-    if ([string]::IsNullOrEmpty($config.DenServerUrl)) {
+    if (-Not $config.DenServerUrl) {
         $config.DenServerUrl = $DenServerUrlDefault
     }
 
-    if ([string]::IsNullOrEmpty($config.DenRouterUrl)) {
+    if (-Not $config.DenRouterUrl) {
         $config.DenRouterUrl = $DenRouterUrlDefault
     }
 }
@@ -169,30 +182,29 @@ function Expand-WaykDenConfig
 function Export-TraefikToml()
 {
     param(
-        [string] $Path
+        [string] $ConfigPath
     )
 
-    if ([string]::IsNullOrEmpty($Path)) {
-        $Path = Get-Location
-    }
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
 
-    $config = Get-WaykDenConfig -Path:$Path
+    $config = Get-WaykDenConfig -ConfigPath:$ConfigPath
     Expand-WaykDenConfig $config
 
-    $TraefikPath = Join-Path $Path "traefik"
+    $TraefikPath = Join-Path $ConfigPath "traefik"
     New-Item -Path $TraefikPath -ItemType "Directory" -Force | Out-Null
 
     $TraefikTomlFile = Join-Path $TraefikPath "traefik.toml"
 
     $TraefikToml = New-TraefikToml -Platform $config.DockerPlatform -ListenerUrl $config.ListenerUrl `
-        -DenLucidUrl $config.DenLucidUrl -DenRouterUrl $config.DenRouterUrl -DenServerUrl $config.DenServerUrl
+        -LucidUrl $config.LucidUrl -DenRouterUrl $config.DenRouterUrl -DenServerUrl $config.DenServerUrl
     Set-Content -Path $TraefikTomlFile -Value $TraefikToml
 }
 
 function New-WaykDenConfig
 {
+    [CmdletBinding()]
     param(
-        [string] $Path,
+        [string] $ConfigPath,
     
         # Server
         [Parameter(Mandatory=$true)]
@@ -201,10 +213,16 @@ function New-WaykDenConfig
         [string] $ExternalUrl,
         [string] $ListenerUrl,
         [string] $ServerMode,
-        [string] $ServerCount,
+        [int] $ServerCount,
+        [string] $DenServerUrl,
+        [string] $DenRouterUrl,
+        [string] $DenApiKey,
+        [bool] $ServerExternal,
 
         # MongoDB
         [string] $MongoUrl,
+        [string] $MongoVolume,
+        [bool] $MongoExternal,
 
         # Jet
         [string] $JetRelayUrl,
@@ -217,32 +235,43 @@ function New-WaykDenConfig
         [string] $LdapServerType,
         [string] $LdapBaseDn,
 
+        # Picky
+        [string] $PickyUrl,
+        [string] $PickyApiKey,
+        [bool] $PickyExternal,
+
+        # Lucid
+        [string] $LucidUrl,
+        [string] $LucidApiKey,
+        [string] $LucidAdminUsername,
+        [string] $LucidAdminSecret,
+        [bool] $LucidExternal,
+
         # NATS
         [string] $NatsUrl,
         [string] $NatsUsername,
         [string] $NatsPassword,
+        [bool] $NatsExternal,
         
         # Redis
         [string] $RedisUrl,
         [string] $RedisPassword,
+        [bool] $RedisExternal,
+
+        # Docker
+        [string] $DockerNetwork,
+        [string] $DockerPlatform,
+        [string] $SyslogServer,
 
         [switch] $Force
     )
 
-    if ([string]::IsNullOrEmpty($Path)) {
-        $Path = Get-Location
-    }
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
 
-    New-Item -Path $Path -ItemType "Directory" -Force | Out-Null
-    $ConfigFile = Join-Path $Path "wayk-den.yml"
+    New-Item -Path $ConfigPath -ItemType "Directory" -Force | Out-Null
+    $ConfigFile = Join-Path $ConfigPath "wayk-den.yml"
 
-    $DenApiKey = New-RandomString -Length 32
-    $PickyApiKey = New-RandomString -Length 32
-    $LucidApiKey = New-RandomString -Length 32
-    $LucidAdminUsername = New-RandomString -Length 16
-    $LucidAdminSecret = New-RandomString -Length 10
-
-    $DenServerPath = Join-Path $Path "den-server"
+    $DenServerPath = Join-Path $ConfigPath "den-server"
     $DenPublicKeyFile = Join-Path $DenServerPath "den-public.pem"
     $DenPrivateKeyFile = Join-Path $DenServerPath "den-private.key"
     New-Item -Path $DenServerPath -ItemType "Directory" -Force | Out-Null
@@ -256,63 +285,41 @@ function New-WaykDenConfig
 
     $config = [WaykDenConfig]::new()
     
-    # Server
-    Set-ConfigString $config 'Realm' $Realm
-    Set-ConfigString $config 'ExternalUrl' $ExternalUrl
-    Set-ConfigString $config 'ListenerUrl' $ListenerUrl
-    Set-ConfigString $config 'ServerMode' $ServerMode
-    Set-ConfigString $config 'ServerCount' $ServerCount
+    $properties = [WaykDenConfig].GetProperties() | ForEach-Object { $_.Name }
+    foreach ($param in $PSBoundParameters.GetEnumerator()) {
+        if ($properties -Contains $param.Key) {
+            $config.($param.Key) = $param.Value
+        }
+    }
 
-    # MongoDB
-    Set-ConfigString $config 'MongoUrl' $MongoUrl
-    
-    # Jet
-    Set-ConfigString $config 'JetRelayUrl' $JetRelayUrl
-
-    # LDAP
-    Set-ConfigString $config 'LdapServerUrl' $LdapServerUrl
-    Set-ConfigString $config 'LdapUsername' $LdapUsername
-    Set-ConfigString $config 'LdapPassword' $LdapPassword
-    Set-ConfigString $config 'LdapUserGroup' $LdapUserGroup
-    Set-ConfigString $config 'LdapServerType' $LdapServerType
-    Set-ConfigString $config 'LdapBaseDn' $LdapBaseDn
-
-    # NATS
-    Set-ConfigString $config 'NatsUrl' $NatsUrl
-    Set-ConfigString $config 'NatsUsername' $NatsUsername
-    Set-ConfigString $config 'NatsPassword' $NatsPassword
-
-    # Redis
-    Set-ConfigString $config 'RedisUrl' $RedisUrl
-    Set-ConfigString $config 'RedisPassword' $RedisPassword
-
-    # Internal API keys
-    Set-ConfigString $config 'DenApiKey' $DenApiKey
-    Set-ConfigString $config 'PickyApiKey' $PickyApiKey
-    Set-ConfigString $config 'LucidApiKey' $LucidApiKey
-    Set-ConfigString $config 'LucidAdminUsername' $LucidAdminUsername
-    Set-ConfigString $config 'LucidAdminSecret' $LucidAdminSecret
+    Expand-WaykDenConfigKeys -Config:$config
 
     ConvertTo-Yaml -Data (ConvertTo-SnakeCaseObject -Object $config) -OutFile $ConfigFile -Force:$Force
 
-    Export-TraefikToml -Path:$Path
+    Export-TraefikToml -ConfigPath:$ConfigPath
 }
 
 function Set-WaykDenConfig
 {
+    [CmdletBinding()]
     param(
-        [string] $Path,
+        [string] $ConfigPath,
     
+        # Server
         [string] $Realm,
         [string] $ExternalUrl,
-
-        # Server
         [string] $ListenerUrl,
         [string] $ServerMode,
-        [string] $ServerCount,
+        [int] $ServerCount,
+        [string] $DenServerUrl,
+        [string] $DenRouterUrl,
+        [string] $DenApiKey,
+        [bool] $ServerExternal,
 
         # MongoDB
         [string] $MongoUrl,
+        [string] $MongoVolume,
+        [bool] $MongoExternal,
 
         # Jet
         [string] $JetRelayUrl,
@@ -325,116 +332,93 @@ function Set-WaykDenConfig
         [string] $LdapServerType,
         [string] $LdapBaseDn,
 
+        # Picky
+        [string] $PickyUrl,
+        [string] $PickyApiKey,
+        [bool] $PickyExternal,
+
+        # Lucid
+        [string] $LucidUrl,
+        [string] $LucidApiKey,
+        [string] $LucidAdminUsername,
+        [string] $LucidAdminSecret,
+        [bool] $LucidExternal,
+
         # NATS
         [string] $NatsUrl,
         [string] $NatsUsername,
         [string] $NatsPassword,
+        [bool] $NatsExternal,
         
         # Redis
         [string] $RedisUrl,
         [string] $RedisPassword,
+        [bool] $RedisExternal,
+
+        # Docker
+        [string] $DockerNetwork,
+        [string] $DockerPlatform,
+        [string] $SyslogServer,
 
         [switch] $Force
     )
 
-    if ([string]::IsNullOrEmpty($Path)) {
-        $Path = Get-Location
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
+
+    $config = Get-WaykDenConfig -ConfigPath:$ConfigPath
+
+    New-Item -Path $ConfigPath -ItemType "Directory" -Force | Out-Null
+    $ConfigFile = Join-Path $ConfigPath "wayk-den.yml"
+
+    $properties = [WaykDenConfig].GetProperties() | ForEach-Object { $_.Name }
+    foreach ($param in $PSBoundParameters.GetEnumerator()) {
+        if ($properties -Contains $param.Key) {
+            $config.($param.Key) = $param.Value
+        }
     }
 
-    $config = Get-WaykDenConfig -Path $Path
-
-    New-Item -Path $Path -ItemType "Directory" -Force | Out-Null
-    $ConfigFile = Join-Path $Path "wayk-den.yml"
-
-    # Server
-    Set-ConfigString $config 'Realm' $Realm
-    Set-ConfigString $config 'ExternalUrl' $ExternalUrl
-    Set-ConfigString $config 'ListenerUrl' $ListenerUrl
-    Set-ConfigString $config 'ServerMode' $ServerMode
-    Set-ConfigString $config 'ServerCount' $ServerCount
-
-    # MongoDB
-    Set-ConfigString $config 'MongoUrl' $MongoUrl
-    
-    # Jet
-    Set-ConfigString $config 'JetRelayUrl' $JetRelayUrl
-
-    # LDAP
-    Set-ConfigString $config 'LdapServerUrl' $LdapServerUrl
-    Set-ConfigString $config 'LdapUsername' $LdapUsername
-    Set-ConfigString $config 'LdapPassword' $LdapPassword
-    Set-ConfigString $config 'LdapUserGroup' $LdapUserGroup
-    Set-ConfigString $config 'LdapServerType' $LdapServerType
-    Set-ConfigString $config 'LdapBaseDn' $LdapBaseDn
-
-    # NATS
-    Set-ConfigString $config 'NatsUrl' $NatsUrl
-    Set-ConfigString $config 'NatsUsername' $NatsUsername
-    Set-ConfigString $config 'NatsPassword' $NatsPassword
-
-    # Redis
-    Set-ConfigString $config 'RedisUrl' $RedisUrl
-    Set-ConfigString $config 'RedisPassword' $RedisPassword
+    Expand-WaykDenConfigKeys -Config:$config
  
     # always force overwriting wayk-den.yml when updating the config file
     ConvertTo-Yaml -Data (ConvertTo-SnakeCaseObject -Object $config) -OutFile $ConfigFile -Force
 
-    Export-TraefikToml -Path:$Path
+    Export-TraefikToml -ConfigPath:$ConfigPath
 }
 
 function Get-WaykDenConfig
 {
+    [CmdletBinding()]
     [OutputType('WaykDenConfig')]
     param(
-        [string] $Path
+        [string] $ConfigPath,
+        [switch] $Expand
     )
 
-    if ([string]::IsNullOrEmpty($Path)) {
-        $Path = Get-Location
-    }
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
 
-    $ConfigFile = Join-Path $Path "wayk-den.yml"
+    $ConfigFile = Join-Path $ConfigPath "wayk-den.yml"
     $ConfigData = Get-Content -Path $ConfigFile -Raw
     $yaml = ConvertFrom-Yaml -Yaml $ConfigData -UseMergingParser -AllDocuments -Ordered
 
     $config = [WaykDenConfig]::new()
-    
-    # Server
-    $config.Realm = Get-ConfigString $yaml 'Realm'
-    $config.ExternalUrl = Get-ConfigString $yaml 'ExternalUrl'
-    $config.ListenerUrl = Get-ConfigString $yaml 'ListenerUrl'
-    $config.ServerMode = Get-ConfigString $yaml 'ServerMode'
-    $config.ServerCount = Get-ConfigString $yaml 'ServerCount'
 
-    # MongoDB
-    $config.MongoUrl = Get-ConfigString $yaml 'MongoUrl'
+    [WaykDenConfig].GetProperties() | ForEach-Object {
+        $Name = $_.Name
+        $snake_name = ConvertTo-SnakeCase -Value $Name
+        if ($yaml.Contains($snake_name)) {
+            if ($yaml.$snake_name -is [string]) {
+                if (![string]::IsNullOrEmpty($yaml.$snake_name)) {
+                    $config.$Name = ($yaml.$snake_name).Trim()
+                }
+            } else {
+                $config.$Name = $yaml.$snake_name
+            }
+        }
+    }
 
-    # Jet
-    $config.JetRelayUrl = Get-ConfigString $yaml 'JetRelayUrl'
-
-    # LDAP
-    $config.LdapServerUrl = Get-ConfigString $yaml 'LdapServerUrl'
-    $config.LdapUsername = Get-ConfigString $yaml 'LdapUsername'
-    $config.LdapPassword = Get-ConfigString $yaml 'LdapPassword'
-    $config.LdapUserGroup = Get-ConfigString $yaml 'LdapUserGroup'
-    $config.LdapServerType = Get-ConfigString $yaml 'LdapServerType'
-    $config.LdapBaseDn = Get-ConfigString $yaml 'LdapBaseDn'
-
-    # NATS
-    $config.NatsUrl = Get-ConfigString $yaml 'NatsUrl'
-    $config.NatsUsername = Get-ConfigString $yaml 'NatsUsername'
-    $config.NatsPassword = Get-ConfigString $yaml 'NatsPassword'
-
-    # Redis
-    $config.RedisUrl = Get-ConfigString $yaml 'RedisUrl'
-    $config.RedisPassword = Get-ConfigString $yaml 'RedisPassword'
-
-    # Internal API keys
-    $config.DenApiKey = Get-ConfigString $yaml 'DenApiKey'
-    $config.PickyApiKey = Get-ConfigString $yaml 'PickyApiKey'
-    $config.LucidApiKey = Get-ConfigString $yaml 'LucidApiKey'
-    $config.LucidAdminUsername = Get-ConfigString $yaml 'LucidAdminUsername'
-    $config.LucidAdminSecret = Get-ConfigString $yaml 'LucidAdminSecret'
+    if ($Expand) {
+        Expand-WaykDenConfig $config
+    }
 
     return $config
 }

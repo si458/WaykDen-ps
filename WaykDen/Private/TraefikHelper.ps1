@@ -5,7 +5,7 @@ function New-TraefikToml
     param(
         [string] $Platform,
         [string] $ListenerUrl,
-        [string] $DenLucidUrl,
+        [string] $LucidUrl,
         [string] $DenRouterUrl,
         [string] $DenServerUrl
     )
@@ -28,6 +28,10 @@ function New-TraefikToml
     $TraefikEntrypoint = $Protocol
     $TraefikCertFile = $(@($TraefikDataPath, "den-server.pem") -Join $PathSeparator)
     $TraefikKeyFile = $(@($TraefikDataPath, "den-server.key") -Join $PathSeparator)
+
+    # escape backslash characters
+    $TraefikCertFile = $TraefikCertFile -replace '[\\/]', '\\'
+    $TraefikKeyFile = $TraefikKeyFile -replace '[\\/]', '\\'
 
     $templates = @()
 
@@ -94,7 +98,7 @@ logLevel = "INFO"
 [backends]
     [backends.lucid]
         [backends.lucid.servers.lucid]
-        url = "${DenLucidUrl}"
+        url = "${LucidUrl}"
         weight = 10
 
     [backends.router]

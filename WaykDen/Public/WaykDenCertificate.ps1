@@ -3,19 +3,17 @@
 
 function Import-WaykDenCertificate
 {
+    [CmdletBinding()]
     param(
-        [string] $Path,
-
+        [string] $ConfigPath,
         [string] $CertificateFile,
         [string] $PrivateKeyFile,
         [string] $Password
     )
 
-    if ([string]::IsNullOrEmpty($Path)) {
-        $Path = Get-Location
-    }
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
 
-    $config = Get-WaykDenConfig -Path:$Path
+    $config = Get-WaykDenConfig -ConfigPath:$ConfigPath
 
     $result = Get-PemCertificate -CertificateFile:$CertificateFile `
         -PrivateKeyFile:$PrivateKeyFile -Password:$Password
@@ -23,7 +21,7 @@ function Import-WaykDenCertificate
     $CertificateData = $result.Certificate
     $PrivateKeyData = $result.PrivateKey
 
-    $TraefikPath = Join-Path $Path "traefik"
+    $TraefikPath = Join-Path $ConfigPath "traefik"
     New-Item -Path $TraefikPath -ItemType "Directory" -Force | Out-Null
 
     $TraefikPemFile = Join-Path $TraefikPath "den-server.pem"
