@@ -99,4 +99,4 @@ Finally, start Wayk Den:
 
 The first launch will pull all docker images based on Windows Server Core, which can take a while because of their large size. Once started, you should be able to open https://den.buzzword.marketing in your browser.
 
-From there, you can follow the link:docs\getting-started-argo.adoc[getting started guide (Argo tunnel)] starting from Step 4: Complete initial configuration from Wayk Den Web UI.
+From there, you can follow the link:getting-started-argo.adoc[getting started guide (Argo tunnel)] starting from Step 4: Complete initial configuration from Wayk Den Web UI.
