@@ -62,7 +62,8 @@ class DockerService
     [Hashtable] $Environment
     [string[]] $Volumes
     [string] $Command
-    [string[]] $Ports
+    [Int32[]] $TargetPorts
+    [bool] $PublishAll
     [DockerHealthcheck] $Healthcheck
     [DockerLogging] $Logging
 
@@ -93,9 +94,11 @@ class DockerService
     
         $this.Command = $other.Command
 
-        if ($other.Ports) {
-            $this.Ports = $other.Ports.Clone()
+        if ($other.TargetPorts) {
+            $this.TargetPorts = $other.TargetPorts.Clone()
         }
+
+        $this.PublishAll = $other.PublishAll
 
         if ($other.Healthcheck) {
             $this.Healthcheck = [DockerHealthcheck]::new($other.Healthcheck)

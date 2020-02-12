@@ -61,6 +61,7 @@ class WaykDenConfig
     # Docker
     [string] $DockerNetwork
     [string] $DockerPlatform
+    [string] $DockerHost
     [string] $SyslogServer
 }
 
@@ -124,6 +125,14 @@ function Expand-WaykDenConfig
 
     if (-Not $config.DockerNetwork) {
         $config.DockerNetwork = $DockerNetworkDefault
+    }
+
+    if (($config.DockerNetwork -Match "none") -and $config.DockerHost) {
+        $MongoUrlDefault = $MongoUrlDefault -Replace "den-mongo", $config.DockerHost
+        $PickyUrlDefault = $PickyUrlDefault -Replace "den-picky", $config.DockerHost
+        $LucidUrlDefault = $LucidUrlDefault -Replace "den-lucid", $config.DockerHost
+        $DenServerUrlDefault = $DenServerUrlDefault -Replace "den-server", $config.DockerHost
+        $DenRouterUrlDefault = $DenRouterUrlDefault -Replace "den-server", $config.DockerHost
     }
 
     if (-Not $config.DockerPlatform) {
@@ -261,6 +270,7 @@ function New-WaykDenConfig
         # Docker
         [string] $DockerNetwork,
         [string] $DockerPlatform,
+        [string] $DockerHost,
         [string] $SyslogServer,
 
         [switch] $Force
@@ -358,6 +368,7 @@ function Set-WaykDenConfig
         # Docker
         [string] $DockerNetwork,
         [string] $DockerPlatform,
+        [string] $DockerHost,
         [string] $SyslogServer,
 
         [switch] $Force

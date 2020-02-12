@@ -57,6 +57,7 @@ function Get-WaykDenService
     $MongoUrl = $config.MongoUrl
     $MongoVolume = $config.MongoVolume
     $DenNetwork = $config.DockerNetwork
+
     $JetServerUrl = $config.JetServerUrl
     $JetRelayUrl = $config.JetRelayUrl
 
@@ -94,7 +95,12 @@ function Get-WaykDenService
     $DenMongo.ContainerName = 'den-mongo'
     $DenMongo.Image = $images[$DenMongo.ContainerName]
     $DenMongo.Platform = $Platform
-    $DenMongo.Networks += $DenNetwork
+    $DenMongo.TargetPorts = @(27017)
+    if ($DenNetwork -NotMatch "none") {
+        $DenMongo.Networks += $DenNetwork
+    } else {
+        $DenMongo.PublishAll = $true
+    }
     $DenMongo.Volumes = @("$MongoVolume`:$MongoDataPath")
     $DenMongo.External = $config.MongoExternal
     $Services += $DenMongo
@@ -126,7 +132,11 @@ function Get-WaykDenService
         $DenNats.ContainerName = 'den-nats'
         $DenNats.Image = $images[$DenNats.ContainerName]
         $DenNats.Platform = $Platform
-        $DenNats.Networks += $DenNetwork
+        if ($DenNetwork -NotMatch "none") {
+            $DenNats.Networks += $DenNetwork
+        } else {
+            $DenNats.PublishAll = $true
+        }
         $DenNats.Command = "--user $($config.NatsUsername) --pass $($config.NatsPassword)"
         $DenNats.External = $config.NatsExternal
         $Services += $DenNats
@@ -136,7 +146,11 @@ function Get-WaykDenService
         $DenRedis.ContainerName = 'den-redis'
         $DenRedis.Image = $images[$DenRedis.ContainerName]
         $DenRedis.Platform = $Platform
-        $DenRedis.Networks += $DenNetwork
+        if ($DenNetwork -NotMatch "none") {
+            $DenRedis.Networks += $DenNetwork
+        } else {
+            $DenRedis.PublishAll = $true
+        }
         $DenRedis.Command = "redis-server --requirepass $($config.RedisPassword)"
         $DenRedis.External = $config.RedisExternal
         $Services += $DenRedis
@@ -148,7 +162,12 @@ function Get-WaykDenService
     $DenPicky.Image = $images[$DenPicky.ContainerName]
     $DenPicky.Platform = $Platform
     $DenPicky.DependsOn = @("den-mongo")
-    $DenPicky.Networks += $DenNetwork
+    $DenPicky.TargetPorts = @(12345)
+    if ($DenNetwork -NotMatch "none") {
+        $DenPicky.Networks += $DenNetwork
+    } else {
+        $DenPicky.PublishAll = $true
+    }
     $DenPicky.Environment = [ordered]@{
         "PICKY_REALM" = $Realm;
         "PICKY_API_KEY" = $PickyApiKey;
@@ -163,7 +182,12 @@ function Get-WaykDenService
     $DenLucid.Image = $images[$DenLucid.ContainerName]
     $DenLucid.Platform = $Platform
     $DenLucid.DependsOn = @("den-mongo")
-    $DenLucid.Networks += $DenNetwork
+    $DenLucid.TargetPorts = @(4242)
+    if ($DenNetwork -NotMatch "none") {
+        $DenLucid.Networks += $DenNetwork
+    } else {
+        $DenLucid.PublishAll = $true
+    }
     $DenLucid.Environment = [ordered]@{
         "LUCID_ADMIN__SECRET" = $LucidAdminSecret;
         "LUCID_ADMIN__USERNAME" = $LucidAdminUsername;
@@ -186,7 +210,12 @@ function Get-WaykDenService
     $DenServer.Image = $images[$DenServer.ContainerName]
     $DenServer.Platform = $Platform
     $DenServer.DependsOn = @("den-mongo", 'den-traefik')
-    $DenServer.Networks += $DenNetwork
+    $DenServer.TargetPorts = @(4491, 10255)
+    if ($DenNetwork -NotMatch "none") {
+        $DenServer.Networks += $DenNetwork
+    } else {
+        $DenServer.PublishAll = $true
+    }
     $DenServer.Environment = [ordered]@{
         "PICKY_REALM" = $Realm;
         "PICKY_URL" = $PickyUrl;
@@ -277,10 +306,13 @@ function Get-WaykDenService
     $DenTraefik.ContainerName = 'den-traefik'
     $DenTraefik.Image = $images[$DenTraefik.ContainerName]
     $DenTraefik.Platform = $Platform
-    $DenTraefik.Networks += $DenNetwork
+    $DenTraefik.TargetPorts = @($TraefikPort)
+    if ($DenNetwork -NotMatch "none") {
+        $DenTraefik.Networks += $DenNetwork
+    }
+    $DenTraefik.PublishAll = $true
     $DenTraefik.Volumes = @("$ConfigPath/traefik:$TraefikDataPath")
     $DenTraefik.Command = ("--file --configFile=" + $(@($TraefikDataPath, "traefik.toml") -Join $PathSeparator))
-    $DenTraefik.Ports = @("$TraefikPort`:$TraefikPort")
     $Services += $DenTraefik
 
     if ($config.SyslogServer) {
@@ -325,9 +357,9 @@ function Get-DockerRunCommand
         }
     }
 
-    if ($Service.Ports) {
-        foreach ($Port in $Service.Ports) {
-            $cmd += @("-p", $Port)
+    if ($Service.PublishAll) {
+        foreach ($TargetPort in $Service.TargetPorts) {
+            $cmd += @("-p", "$TargetPort`:$TargetPort")
         }
     }
 
