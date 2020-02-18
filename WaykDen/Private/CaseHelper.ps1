@@ -33,8 +33,14 @@ function ConvertTo-SnakeCaseObject
 
     $Object.PSObject.Properties | ForEach-Object {
         $name = ConvertTo-SnakeCase -Value ($_.Name | Out-String).Trim()
-        $value = ($_.Value | Out-String).Trim()
-        if (![string]::IsNullOrEmpty($value)) {
+
+        if ($_.Value -is [string]) {
+            $value = ($_.Value | Out-String).Trim()
+            if (![string]::IsNullOrEmpty($value)) {
+                $snake_obj | Add-Member -MemberType NoteProperty -Name $name -Value $value
+            }
+        } else {
+            $value = $_.Value
             $snake_obj | Add-Member -MemberType NoteProperty -Name $name -Value $value
         }
     }

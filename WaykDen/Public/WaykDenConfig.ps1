@@ -408,7 +408,7 @@ function Get-WaykDenConfig
     $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
 
     $ConfigFile = Join-Path $ConfigPath "wayk-den.yml"
-    $ConfigData = Get-Content -Path $ConfigFile -Raw
+    $ConfigData = Get-Content -Path $ConfigFile -Raw -ErrorAction Stop
     $yaml = ConvertFrom-Yaml -Yaml $ConfigData -UseMergingParser -AllDocuments -Ordered
 
     $config = [WaykDenConfig]::new()

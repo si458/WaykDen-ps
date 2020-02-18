@@ -1,0 +1,59 @@
+= Getting Started - Relay Servers
+
+== Overview
+
+This getting started guide provides instructions on how to deploy a Devolutions Jet relay server and configure Wayk Den to use it. By default, Wayk Den is configured to use the Devolutions relay servers (https://api.jet-relay.net). While these relay servers should suffice in a lot of cases, organizations who want a deployment completely isolated from our cloud services will need to deploy their own relay servers.
+
+== Instructions
+
+Open a PowerShell prompt, import the 'WaykDen' module and move to the same directory where you currently store Wayk Den files:
+
+----
+> Import-Module WaykDen
+> cd ~/den-test
+----
+
+Configure the relay with 'jet.buzzword.marketing' as the external hostname, along with two listeners:
+
+----
+Set-JetConfig -JetInstance 'jet.buzzword.marketing' -JetListeners @('tcp://0.0.0.0:8080', 'wss://0.0.0.0:7171,wss://<jet_instance>:443')
+----
+
+A listener has the following format:
+<scheme>://<hostname>:<port>
+
+Where the hostname is '0.0.0.0' to listen on all network interfaces. For instance, "tcp://0.0.0.0:8080' is a TCP listener on port 8080.
+
+If the listener is exposed externally with a different scheme and port, the local and external URLs are separated by a comma:
+
+<scheme>://<hostname>:<port>,<scheme>://<hostname>:<port>
+
+To automatically use the configured hostname (jet instance), the special hostname value "<jet_instance>" can be used.
+
+For instance, 'wss://0.0.0.0:7171,wss://<jet_instance>:443' is a wss listener on port 7171 that will be exposed externally as 'wss://jet.buzzword.marketing'.
+
+Import a valid certificate for the Devolutions Jet server:
+
+----
+> Import-JetCertificate -CertificateFile .\fullchain.pfx -Password 'poshacme'
+----
+
+Start the Devolutions Jet relay:
+----
+> Start-JetRelay
+----
+
+Test that the Devolutions Jet relay can be reached externally:
+
+----
+> $JetRelayUrl = 'https://jet.buzzword.marketing'
+> (Invoke-WebRequest "$JetRelayUrl/health").StatusCode -Eq 200
+True
+----
+
+Configure Wayk Den to use the new Devolutions Jet relay:
+
+----
+> Set-WaykDenConfig -JetRelayUrl 'https://jet.buzzword.marketing'
+> Restart-WaykDen
+----

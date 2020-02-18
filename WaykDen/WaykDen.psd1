@@ -71,7 +71,9 @@
     FunctionsToExport = @('New-WaykDenConfig', 'Set-WaykDenConfig', 'Get-WaykDenConfig',
         'Import-WaykDenCertificate',
         'Start-WaykDen', 'Stop-WaykDen', 'Restart-WaykDen',
-        'Backup-WaykDenData', 'Restore-WaykDenData')
+        'Backup-WaykDenData', 'Restore-WaykDenData',
+        'Set-JetConfig', 'Get-JetConfig', 'Import-JetCertificate',
+        'Start-JetRelay', 'Stop-JetRelay', 'Restart-JetRelay')
     
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
     CmdletsToExport = @()

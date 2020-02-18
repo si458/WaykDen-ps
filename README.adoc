@@ -5,7 +5,14 @@
 
 WaykDen-ps is a PowerShell cmdlet for Wayk Den, the centralized server for https://wayk.devolutions.net[Devolutions Wayk Now]. For assistance or feature requests, please use the https://forum.devolutions.net/#WaykNow[Wayk Now forums] or open a ticket on this github project.
 
-Make sure you have all software prerequisites (<<Installation>> section) then read our quick link:docs\getting-started-argo.adoc[getting started guide (Argo tunnel)] or link:docs\getting-started-azure.adoc[getting started guide (Azure VM)]. Once you have been familiarized with Wayk Den, come back to this page for more details on specific aspects of the software.
+Make sure you have all software prerequisites (<<Installation>> section) then read one of our getting started guides:
+
+* link:docs\getting-started-argo.adoc[getting started guide (Argo tunnel)]
+* link:docs\getting-started-azure.adoc[getting started guide (Azure VM)].
+* link:docs\getting-started-relay.adoc[getting started guide (Relay servers)].
+* link:docs\getting-started-acme.adoc[getting started guide (ACME/letsencrypt)].
+
+Once you have been familiarized with Wayk Den, come back to this page for more details on specific aspects of the software.
 
 == Installation
 
@@ -165,8 +172,6 @@ PS > Import-WaykDenCertificate -CertificateFile /path/to/certificate.pem -Privat
 PS > Import-WaykDenCertificate -CertificateFile /path/to/certificate.pfx -Password <password>
 ----
 
-If you want to roll your own certificate authority, you can check link:docs\smallstep-ca.adoc[smallstep ca].
-
 === Relay Configuration
 
 To get started, it is recommended to try using our existing relay servers, even if you intend to deploy your own servers later on. It is the quickest path to getting something functional up and running.
@@ -178,7 +183,7 @@ Set your Jet Relay Url to `https://api.jet-relay.net`:
 PS > Set-WaykDenConfig -JetRelayUrl https://api.jet-relay.net
 ----
 
-Continue your initial configuration, and once you know it is working, come back to the link:docs\devolutions-jet.adoc[Devolutions Jet] page for more information on how to deploy your own relays.
+Continue your initial configuration, and once you know it is working, come back to the link:docs\getting-started-relay.adoc[Devolutions Jet] page for more information on how to deploy your own relays.
 
 == Data Persistence
 
