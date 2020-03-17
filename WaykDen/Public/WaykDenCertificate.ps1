@@ -31,4 +31,25 @@ function Import-WaykDenCertificate
     Set-Content -Path $TraeficKeyFile -Value $PrivateKeyData -Force
 }
 
-Export-ModuleMember -Function Import-WaykDenCertificate
+function Import-WaykLdapCertificate
+{
+    [CmdletBinding()]
+    param(
+        [string] $ConfigPath,
+        [string] $CertificateFile
+    )
+
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
+
+    $config = Get-WaykDenConfig -ConfigPath:$ConfigPath
+
+    $CertificateData = Get-Content -Path $CertificateFile -Raw -ErrorAction Stop
+
+    $DenServerPath = Join-Path $ConfigPath "den-server"
+    New-Item -Path $DenServerPath -ItemType "Directory" -Force | Out-Null
+
+    $LdapRootCaFile = Join-Path $DenServerPath "ldap-root-ca.pem"
+    Set-Content -Path $LdapRootCaFile -Value $CertificateData -Force
+}
+
+Export-ModuleMember -Function Import-WaykDenCertificate, Import-WaykLdapCertificate

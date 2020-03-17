@@ -29,11 +29,13 @@ class WaykDenConfig
 
     # LDAP
     [string] $LdapServerUrl
+    [string] $LdapServerIp
     [string] $LdapUsername
     [string] $LdapPassword
     [string] $LdapUserGroup
     [string] $LdapServerType
     [string] $LdapBaseDn
+    [bool] $LdapCertificateValidation
 
     # Picky
     [string] $PickyUrl
@@ -238,11 +240,13 @@ function New-WaykDenConfig
 
         # LDAP
         [string] $LdapServerUrl,
+        [string] $LdapServerIp,
         [string] $LdapUsername,
         [string] $LdapPassword,
         [string] $LdapUserGroup,
         [string] $LdapServerType,
         [string] $LdapBaseDn,
+        [bool] $LdapCertificateValidation,
 
         # Picky
         [string] $PickyUrl,
@@ -336,11 +340,13 @@ function Set-WaykDenConfig
 
         # LDAP
         [string] $LdapServerUrl,
+        [string] $LdapServerIp,
         [string] $LdapUsername,
         [string] $LdapPassword,
         [string] $LdapUserGroup,
         [string] $LdapServerType,
         [string] $LdapBaseDn,
+        [bool] $LdapCertificateValidation,
 
         # Picky
         [string] $PickyUrl,
