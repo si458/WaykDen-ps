@@ -2,7 +2,7 @@
 
 This document provides a list of notable changes introduced in Wayk Den by release.
 
-== 2020.1.4 (2020-03-19)
+== 2020.1.4 (2020-03-18)
 
   * Add support for web-based Wayk Now white-label bundle editor
   * Add support for Active Directory LDAPS integration with custom CA
