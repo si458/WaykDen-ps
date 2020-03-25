@@ -35,6 +35,7 @@ class WaykDenConfig
     [string] $LdapUserGroup
     [string] $LdapServerType
     [string] $LdapBaseDn
+    [string] $LdapBindType
     [bool] $LdapCertificateValidation
 
     # Picky
@@ -206,8 +207,13 @@ function Export-TraefikToml()
 
     $TraefikTomlFile = Join-Path $TraefikPath "traefik.toml"
 
-    $TraefikToml = New-TraefikToml -Platform $config.DockerPlatform -ListenerUrl $config.ListenerUrl `
-        -LucidUrl $config.LucidUrl -DenRouterUrl $config.DenRouterUrl -DenServerUrl $config.DenServerUrl
+    $TraefikToml = New-TraefikToml -Platform $config.DockerPlatform `
+        -ListenerUrl $config.ListenerUrl `
+        -LucidUrl $config.LucidUrl `
+        -PickyUrl $config.PickyUrl `
+        -DenRouterUrl $config.DenRouterUrl `
+        -DenServerUrl $config.DenServerUrl
+
     Set-Content -Path $TraefikTomlFile -Value $TraefikToml
 }
 
@@ -246,6 +252,7 @@ function New-WaykDenConfig
         [string] $LdapUserGroup,
         [string] $LdapServerType,
         [string] $LdapBaseDn,
+        [string] $LdapBindType,
         [bool] $LdapCertificateValidation,
 
         # Picky
@@ -346,6 +353,7 @@ function Set-WaykDenConfig
         [string] $LdapUserGroup,
         [string] $LdapServerType,
         [string] $LdapBaseDn,
+        [string] $LdapBindType,
         [bool] $LdapCertificateValidation,
 
         # Picky

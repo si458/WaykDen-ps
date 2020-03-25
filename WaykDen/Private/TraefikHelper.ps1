@@ -6,6 +6,7 @@ function New-TraefikToml
         [string] $Platform,
         [string] $ListenerUrl,
         [string] $LucidUrl,
+        [string] $PickyUrl,
         [string] $DenRouterUrl,
         [string] $DenServerUrl
     )
@@ -81,6 +82,13 @@ logLevel = "INFO"
         [frontends.lucidauth.routes.lucidauth]
         rule = "PathPrefix:/auth"
 
+    [frontends.picky]
+    passHostHeader = true
+    backend = "picky"
+    entrypoints = ["${TraefikEntrypoint}"]
+        [frontends.picky.routes.picky]
+        rule = "PathPrefixStrip:/picky"
+
     [frontends.router]
     passHostHeader = true
     backend = "router"
@@ -99,6 +107,12 @@ logLevel = "INFO"
     [backends.lucid]
         [backends.lucid.servers.lucid]
         url = "${LucidUrl}"
+        weight = 10
+
+    [backends.picky]
+        [backends.picky.servers.picky]
+        url = "${PickyUrl}"
+        method="drr"
         weight = 10
 
     [backends.router]

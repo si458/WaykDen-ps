@@ -2,6 +2,11 @@
 
 This document provides a list of notable changes introduced in Wayk Den by release.
 
+== 2020.1.5 (2020-03-25)
+
+  * Fix Active Directory integration (LDAPS + simple bind)
+  * Fix Devolutions Jet relay possible ghost sessions
+
 == 2020.1.4 (2020-03-18)
 
   * Add support for web-based Wayk Now white-label bundle editor

@@ -13,7 +13,7 @@ function Get-WaykDenImage
         [ordered]@{ # Linux containers
             "den-lucid" = "devolutions/den-lucid:3.6.5-buster";
             "den-picky" = "devolutions/picky:4.2.1-buster";
-            "den-server" = "devolutions/den-server:1.14.0-buster";
+            "den-server" = "devolutions/den-server:1.15.0-buster";
 
             "den-mongo" = "library/mongo:4.2-bionic";
             "den-traefik" = "library/traefik:1.7";
@@ -24,7 +24,7 @@ function Get-WaykDenImage
         [ordered]@{ # Windows containers
             "den-lucid" = "devolutions/den-lucid:3.6.5-servercore-ltsc2019";
             "den-picky" = "devolutions/picky:4.2.1-servercore-ltsc2019";
-            "den-server" = "devolutions/den-server:1.14.0-servercore-ltsc2019";
+            "den-server" = "devolutions/den-server:1.15.0-servercore-ltsc2019";
 
             "den-mongo" = "library/mongo:4.2-windowsservercore-1809";
             "den-traefik" = "library/traefik:1.7-windowsservercore-1809";
@@ -219,8 +219,9 @@ function Get-WaykDenService
     $DenServer.Environment = [ordered]@{
         "PICKY_REALM" = $Realm;
         "PICKY_URL" = $PickyUrl;
-        "PICKY_APIKEY" = $PickyApiKey; # will be changed to PICKY_API_KEY
-        "DB_URL" = $MongoUrl; # will be changed to MONGO_URL
+        "PICKY_EXTERNAL_URL" = "$ExternalUrl/picky";
+        "PICKY_API_KEY" = $PickyApiKey;
+        "MONGO_URL" = $MongoUrl;
         "LUCID_AUTHENTICATION_KEY" = $LucidApiKey;
         "DEN_ROUTER_EXTERNAL_URL" = "$ExternalUrl/cow";
         "LUCID_INTERNAL_URL" = $LucidUrl;
@@ -269,6 +270,10 @@ function Get-WaykDenService
 
     if (![string]::IsNullOrEmpty($config.LdapBaseDn)) {
         $DenServer.Environment['LDAP_BASE_DN'] = $config.LdapBaseDn
+    }
+
+    if (![string]::IsNullOrEmpty($config.LdapBindType)) {
+        $DenServer.Environment['LDAP_BIND_TYPE'] = $config.LdapBindType
     }
 
     if ($config.LdapCertificateValidation) {
@@ -362,7 +367,7 @@ function Get-DockerRunCommand
         $Service.Environment.GetEnumerator() | foreach {
             $key = $_.Key
             $val = $_.Value
-            $cmd += @("-e", "$key=$val")
+            $cmd += @("-e", "`"$key=$val`"")
         }
     }
 
