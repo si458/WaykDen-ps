@@ -36,6 +36,40 @@ function Get-WaykDenImage
     return $images
 }
 
+function Get-HostInfo()
+{
+    param(
+        [string] $Platform
+    )
+
+    $PSVersion = Get-PSVersion
+    $CmdletVersion = Get-CmdletVersion
+    $DockerVersion = Get-DockerVersion
+    $DockerPlatform = $Platform
+    $OsVersionInfo = Get-OsVersionInfo
+
+    $images = Get-WaykDenImage -Platform:$Platform
+    $DenServerImage = $images['den-server']
+    $DenPickyImage = $images['den-picky']
+    $DenLucidImage = $images['den-lucid']
+    $TraefikImage = $images['den-traefik']
+    $MongoImage = $images['den-mongo']
+
+    return [PSCustomObject]@{
+        PSVersion = $PSVersion
+        CmdletVersion = $CmdletVersion
+        DockerVersion = $DockerVersion
+        DockerPlatform = $DockerPlatform
+        OsVersionInfo = $OsVersionInfo
+
+        DenServerImage = $DenServerImage
+        DenPickyImage = $DenPickyImage
+        DenLucidImage = $DenLucidImage
+        TraefikImage = $TraefikImage
+        MongoImage = $MongoImage
+    }
+}
+
 function Get-WaykDenService
 {
     param(
@@ -489,6 +523,9 @@ function Start-WaykDen
 
     # update traefik.toml
     Export-TraefikToml -ConfigPath:$ConfigPath
+
+    $HostInfo = Get-HostInfo -Platform:$Platform
+    Export-HostInfo -ConfigPath:$ConfigPath -HostInfo $HostInfo
 
     if (-Not $SkipPull) {
         # pull docker images

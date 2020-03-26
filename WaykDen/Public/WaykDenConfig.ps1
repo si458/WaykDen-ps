@@ -217,6 +217,26 @@ function Export-TraefikToml()
     Set-Content -Path $TraefikTomlFile -Value $TraefikToml
 }
 
+function Export-HostInfo()
+{
+    param(
+        [string] $ConfigPath,
+        [PSCustomObject] $HostInfo
+    )
+
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
+
+    $config = Get-WaykDenConfig -ConfigPath:$ConfigPath
+    Expand-WaykDenConfig $config
+
+    $DenServerPath = Join-Path $ConfigPath "den-server"
+    New-Item -Path $DenServerPath -ItemType "Directory" -Force | Out-Null
+
+    $JsonValue = $($HostInfo | ConvertTo-Json)
+    $HostInfoFile = Join-Path $DenServerPath "host_info.json"
+    Set-Content -Path $HostInfoFile -Value $JsonValue -Force
+}
+
 function New-WaykDenConfig
 {
     [CmdletBinding()]
