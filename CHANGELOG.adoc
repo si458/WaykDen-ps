@@ -2,6 +2,10 @@
 
 This document provides a list of notable changes introduced in Wayk Den by release.
 
+== 2020.1.6 (unreleased)
+
+  * Fix https listener on Linux due to broken paths in traefik.toml file
+
 == 2020.1.5 (2020-03-25)
 
   * Fix Active Directory integration (LDAPS + simple bind)
