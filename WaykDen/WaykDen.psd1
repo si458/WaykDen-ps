@@ -67,6 +67,7 @@
     FunctionsToExport = @('New-WaykDenConfig', 'Set-WaykDenConfig', 'Get-WaykDenConfig',
         'Import-WaykDenCertificate', 'Import-WaykLdapCertificate',
         'Start-WaykDen', 'Stop-WaykDen', 'Restart-WaykDen',
+        'Register-WaykDenService', 'Unregister-WaykDenService',
         'Backup-WaykDenData', 'Restore-WaykDenData',
         'Set-JetConfig', 'Get-JetConfig', 'Import-JetCertificate',
         'Start-JetRelay', 'Stop-JetRelay', 'Restart-JetRelay')
