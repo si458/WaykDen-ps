@@ -587,7 +587,7 @@ function Restart-WaykDen
     Start-WaykDen -ConfigPath:$ConfigPath
 }
 
-function Get-ServiceDefinition()
+function Get-WaykDenServiceDefinition()
 {
     $ServiceName = "WaykDen"
     $ModuleName = "WaykDen"
@@ -623,7 +623,7 @@ function Register-WaykDenService
     $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
 
     if (Get-IsWindows) {
-        $Definition = Get-ServiceDefinition
+        $Definition = Get-WaykDenServiceDefinition
         $Executable = Get-ServiceExecutable
         
         $ServiceName = $Definition.ServiceName
@@ -632,11 +632,8 @@ function Register-WaykDenService
         $WorkingDir = $Definition.WorkingDir
 
         $ServiceDir = [System.Environment]::ExpandEnvironmentVariables($WorkingDir)
-        $BinaryPathName = Join-Path $ServiceDir 'WaykDen.exe'
+        $BinaryPathName = Join-Path $ServiceDir "${ServiceName}.exe"
         $ManifestFile = Join-Path $ServiceDir "service.json"
-
-        Write-Host "ServiceDir: $ServiceDir"
-        Write-Host "BinaryPathName: $BinaryPathName"
 
         $Service = Get-Service | Where-Object { $_.Name -Like $ServiceName }
 
@@ -676,13 +673,13 @@ function Unregister-WaykDenService
     $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
 
     if (Get-IsWindows) {
-        $Definition = Get-ServiceDefinition
+        $Definition = Get-WaykDenServiceDefinition
 
         $ServiceName = $Definition.ServiceName
         $WorkingDir = $Definition.WorkingDir
 
         $ServiceDir = [System.Environment]::ExpandEnvironmentVariables($WorkingDir)
-        $BinaryPathName = Join-Path $ServiceDir 'WaykDen.exe'
+        $BinaryPathName = Join-Path $ServiceDir "${ServiceName}.exe"
         $ManifestFile = Join-Path $ServiceDir "service.json"
 
         $Service = Get-Service | Where-Object { $_.Name -Like $ServiceName }
