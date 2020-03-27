@@ -591,17 +591,19 @@ function Get-ServiceDefinition()
 {
     $ServiceName = "WaykDen"
     $ModuleName = "WaykDen"
+    $DisplayName = "Wayk Den"
     $CompanyName = "Devolutions"
+    $Description = "Wayk Den service"
 
     return [PSCustomObject]@{
         ServiceName = $ServiceName
-        DisplayName = "Wayk Den"
-        Description = "Wayk Den service"
+        DisplayName = $DisplayName
+        Description = $Description
         CompanyName = $CompanyName
         ModuleName = $ModuleName
         StartCommand = "Start-WaykDen"
         StopCommand = "Stop-WaykDen"
-        WorkingDir = "%ProgramData%\${CompanyName}\${ServiceName}"
+        WorkingDir = "%ProgramData%\${CompanyName}\${DisplayName}"
     }
 }
 
@@ -632,6 +634,9 @@ function Register-WaykDenService
         $ServiceDir = [System.Environment]::ExpandEnvironmentVariables($WorkingDir)
         $BinaryPathName = Join-Path $ServiceDir 'WaykDen.exe'
         $ManifestFile = Join-Path $ServiceDir "service.json"
+
+        Write-Host "ServiceDir: $ServiceDir"
+        Write-Host "BinaryPathName: $BinaryPathName"
 
         $Service = Get-Service | Where-Object { $_.Name -Like $ServiceName }
 
