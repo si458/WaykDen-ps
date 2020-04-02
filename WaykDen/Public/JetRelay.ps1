@@ -4,6 +4,7 @@
 . "$PSScriptRoot/../Private/DockerHelper.ps1"
 . "$PSScriptRoot/../Private/CaseHelper.ps1"
 . "$PSScriptRoot/../Private/YamlHelper.ps1"
+. "$PSScriptRoot/../Private/CmdletService.ps1"
 
 function Get-JetImage
 {
@@ -139,7 +140,55 @@ function Find-JetConfig
         $ConfigPath = Get-Location
     }
 
+    if ($Env:JET_CONFIG_PATH) {
+        $ConfigPath = $Env:JET_CONFIG_PATH
+    }
+
     return $ConfigPath
+}
+
+function Set-JetConfigPath
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true,Position=0)]
+        [string] $ConfigPath
+    )
+
+    $Env:JET_CONFIG_PATH = $ConfigPath
+}
+
+function Get-JetRelayPath()
+{
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory,Position=0)]
+        [ValidateSet("ConfigPath","GlobalPath","LocalPath")]
+		[string] $PathType
+	)
+
+    $DisplayName = "Jet Relay"
+    $LowerName = "jet-relay"
+    $CompanyName = "Devolutions"
+	$HomePath = Resolve-Path '~'
+
+	if (Get-IsWindows)	{
+		$LocalPath = $Env:AppData + "\${CompanyName}\${DisplayName}";
+		$GlobalPath = $Env:ProgramData + "\${CompanyName}\${DisplayName}"
+	} elseif ($IsMacOS) {
+		$LocalPath = "$HomePath/Library/Application Support/${DisplayName}"
+		$GlobalPath = "/Library/Application Support/${DisplayName}"
+	} elseif ($IsLinux) {
+		$LocalPath = "$HomePath/.config/${LowerName}"
+		$GlobalPath = "/etc/${LowerName}"
+	}
+
+	switch ($PathType) {
+		'LocalPath' { $LocalPath }
+		'GlobalPath' { $GlobalPath }
+        'ConfigPath' { $GlobalPath }
+		default { throw("Invalid path type: $PathType") }
+	}
 }
 
 function Import-JetCertificate
@@ -225,6 +274,21 @@ function Get-JetService
     return $Service
 }
 
+function Update-JetRelay
+{
+    [CmdletBinding()]
+    param(
+        [string] $ConfigPath
+    )
+
+    $ConfigPath = Find-JetConfig -ConfigPath:$ConfigPath
+    $config = Get-JetConfig -ConfigPath:$ConfigPath
+    Expand-JetConfig -Config $config
+
+    $Service = Get-JetService -ConfigPath:$ConfigPath -Config:$config
+    Request-ContainerImage -Name $Service.Image
+}
+
 function Start-JetRelay
 {
     [CmdletBinding()]
@@ -301,11 +365,6 @@ function Get-JetRelayServiceDefinition()
     }
 }
 
-function Get-ServiceExecutable()
-{
-    Join-Path $PSScriptRoot "/../bin/cmdlet-service.exe"
-}
-
 function Register-JetRelayService
 {
     [CmdletBinding()]
@@ -315,87 +374,30 @@ function Register-JetRelayService
     )
 
     $ConfigPath = Find-JetConfig -ConfigPath:$ConfigPath
+    $Definition = Get-JetRelayServiceDefinition
+    Register-CmdletService -Definition $Definition -Force:$Force
 
-    if (Get-IsWindows) {
-        $Definition = Get-JetRelayServiceDefinition
-        $Executable = Get-ServiceExecutable
-        
-        $ServiceName = $Definition.ServiceName
-        $DisplayName = $Definition.DisplayName
-        $Description = $Definition.Description
-        $WorkingDir = $Definition.WorkingDir
-
-        $ServiceDir = [System.Environment]::ExpandEnvironmentVariables($WorkingDir)
-        $BinaryPathName = Join-Path $ServiceDir "${ServiceName}.exe"
-        $ManifestFile = Join-Path $ServiceDir "service.json"
-
-        $Service = Get-Service | Where-Object { $_.Name -Like $ServiceName }
-
-        if ($Service) {
-            Unregister-WaykDenService -ConfigPath:$ConfigPath
-        }
-
-        $DependsOn = "Docker"
-        $StartupType = "Automatic"
-
-        New-Item -Path $ServiceDir -ItemType 'Directory' -Force | Out-Null
-        Copy-Item -Path $Executable -Destination $BinaryPathName -Force
-        Set-Content -Path $ManifestFile -Value $($Definition | ConvertTo-Json) -Force
-
-        $params = @{
-            Name = $ServiceName
-            DisplayName = $DisplayName
-            Description = $Description
-            BinaryPathName = $BinaryPathName
-            DependsOn = $DependsOn
-            StartupType = $StartupType
-        }
-
-        New-Service @params | Out-Null
-    } else {
-        throw "Service registration is not supported on this platform"
-    }
+    $ServiceName = $Definition.ServiceName
+    $ServicePath = [System.Environment]::ExpandEnvironmentVariables($Definition.WorkingDir)
+    Write-Host "`"$ServiceName`" service has been installed to `"$ServicePath`""
 }
 
 function Unregister-JetRelayService
 {
     [CmdletBinding()]
     param(
-        [string] $ConfigPath
+        [string] $ConfigPath,
+        [switch] $Force
     )
 
     $ConfigPath = Find-JetConfig -ConfigPath:$ConfigPath
-
-    if (Get-IsWindows) {
-        $Definition = Get-JetRelayServiceDefinition
-
-        $ServiceName = $Definition.ServiceName
-        $WorkingDir = $Definition.WorkingDir
-
-        $ServiceDir = [System.Environment]::ExpandEnvironmentVariables($WorkingDir)
-        $BinaryPathName = Join-Path $ServiceDir "${ServiceName}.exe"
-        $ManifestFile = Join-Path $ServiceDir "service.json"
-
-        $Service = Get-Service | Where-Object { $_.Name -Like $ServiceName }
-
-        if ($Service) {
-            Stop-Service -Name $ServiceName
-
-            if (Get-Command 'Remove-Service' -ErrorAction SilentlyContinue) {
-                Remove-Service -Name $ServiceName
-            } else { # Windows PowerShell 5.1
-                & 'sc.exe' 'delete' $ServiceName | Out-Null
-            }
-        }
-
-        Remove-Item -Path $BinaryPathName -Force -ErrorAction SilentlyContinue
-        Remove-Item -Path $ManifestFile -Force -ErrorAction SilentlyContinue
-    } else {
-        throw "Service registration is not supported on this platform"
-    }
+    $Definition = Get-JetRelayServiceDefinition
+    Unregister-CmdletService -Definition $Definition -Force:$Force
 }
 
 Export-ModuleMember -Function `
-    Set-JetConfig, Get-JetConfig, Import-JetCertificate, `
-    Start-JetRelay, Stop-JetRelay, Restart-JetRelay, `
+    Set-JetConfig, Get-JetConfig, `
+    Set-JetConfigPath, Get-JetRelayPath, `
+    Import-JetCertificate, `
+    Start-JetRelay, Stop-JetRelay, Restart-JetRelay, Update-JetRelay, `
     Register-JetRelayService, Unregister-JetRelayService

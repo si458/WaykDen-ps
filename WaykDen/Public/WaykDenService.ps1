@@ -2,6 +2,7 @@
 . "$PSScriptRoot/../Private/PlatformHelper.ps1"
 . "$PSScriptRoot/../Private/DockerHelper.ps1"
 . "$PSScriptRoot/../Private/TraefikHelper.ps1"
+. "$PSScriptRoot/../Private/CmdletService.ps1"
 
 function Get-WaykDenImage
 {
@@ -407,7 +408,7 @@ function Get-DockerRunCommand
 
     if ($Service.Volumes) {
         foreach ($Volume in $Service.Volumes) {
-            $cmd += @("-v", $Volume)
+            $cmd += @("-v", "`"$Volume`"")
         }
     }
 
@@ -503,6 +504,25 @@ function Start-DockerService
         Write-Host "$($Service.ContainerName) successfully started"
     } else {
         throw "Error starting $($Service.ContainerName)"
+    }
+}
+
+function Update-WaykDen
+{
+    [CmdletBinding()]
+    param(
+        [string] $ConfigPath
+    )
+
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
+    $config = Get-WaykDenConfig -ConfigPath:$ConfigPath
+    Expand-WaykDenConfig -Config $config
+
+    $Platform = $config.DockerPlatform
+    $Services = Get-WaykDenService -ConfigPath:$ConfigPath -Config $config
+
+    foreach ($service in $services) {
+        Request-ContainerImage -Name $Service.Image
     }
 }
 
@@ -607,11 +627,6 @@ function Get-WaykDenServiceDefinition()
     }
 }
 
-function Get-ServiceExecutable()
-{
-    Join-Path $PSScriptRoot "/../bin/cmdlet-service.exe"
-}
-
 function Register-WaykDenService
 {
     [CmdletBinding()]
@@ -621,85 +636,26 @@ function Register-WaykDenService
     )
 
     $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
+    $Definition = Get-WaykDenServiceDefinition
+    Register-CmdletService -Definition $Definition -Force:$Force
 
-    if (Get-IsWindows) {
-        $Definition = Get-WaykDenServiceDefinition
-        $Executable = Get-ServiceExecutable
-        
-        $ServiceName = $Definition.ServiceName
-        $DisplayName = $Definition.DisplayName
-        $Description = $Definition.Description
-        $WorkingDir = $Definition.WorkingDir
-
-        $ServiceDir = [System.Environment]::ExpandEnvironmentVariables($WorkingDir)
-        $BinaryPathName = Join-Path $ServiceDir "${ServiceName}.exe"
-        $ManifestFile = Join-Path $ServiceDir "service.json"
-
-        $Service = Get-Service | Where-Object { $_.Name -Like $ServiceName }
-
-        if ($Service) {
-            Unregister-WaykDenService -ConfigPath:$ConfigPath
-        }
-
-        $DependsOn = "Docker"
-        $StartupType = "Automatic"
-
-        New-Item -Path $ServiceDir -ItemType 'Directory' -Force | Out-Null
-        Copy-Item -Path $Executable -Destination $BinaryPathName -Force
-        Set-Content -Path $ManifestFile -Value $($Definition | ConvertTo-Json) -Force
-
-        $params = @{
-            Name = $ServiceName
-            DisplayName = $DisplayName
-            Description = $Description
-            BinaryPathName = $BinaryPathName
-            DependsOn = $DependsOn
-            StartupType = $StartupType
-        }
-
-        New-Service @params | Out-Null
-    } else {
-        throw "Service registration is not supported on this platform"
-    }
+    $ServiceName = $Definition.ServiceName
+    $ServicePath = [System.Environment]::ExpandEnvironmentVariables($Definition.WorkingDir)
+    Write-Host "`"$ServiceName`" service has been installed to `"$ServicePath`""
 }
 
 function Unregister-WaykDenService
 {
     [CmdletBinding()]
     param(
-        [string] $ConfigPath
+        [string] $ConfigPath,
+        [switch] $Force
     )
 
     $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
-
-    if (Get-IsWindows) {
-        $Definition = Get-WaykDenServiceDefinition
-
-        $ServiceName = $Definition.ServiceName
-        $WorkingDir = $Definition.WorkingDir
-
-        $ServiceDir = [System.Environment]::ExpandEnvironmentVariables($WorkingDir)
-        $BinaryPathName = Join-Path $ServiceDir "${ServiceName}.exe"
-        $ManifestFile = Join-Path $ServiceDir "service.json"
-
-        $Service = Get-Service | Where-Object { $_.Name -Like $ServiceName }
-
-        if ($Service) {
-            Stop-Service -Name $ServiceName
-
-            if (Get-Command 'Remove-Service' -ErrorAction SilentlyContinue) {
-                Remove-Service -Name $ServiceName
-            } else { # Windows PowerShell 5.1
-                & 'sc.exe' 'delete' $ServiceName | Out-Null
-            }
-        }
-
-        Remove-Item -Path $BinaryPathName -Force -ErrorAction SilentlyContinue
-        Remove-Item -Path $ManifestFile -Force -ErrorAction SilentlyContinue
-    } else {
-        throw "Service registration is not supported on this platform"
-    }
+    $Definition = Get-WaykDenServiceDefinition
+    Unregister-CmdletService -Definition $Definition -Force:$Force
 }
 
 Export-ModuleMember -Function Start-WaykDen, Stop-WaykDen, Restart-WaykDen, `
-    Register-WaykDenService, Unregister-WaykDenService
+    Update-WaykDen, Register-WaykDenService, Unregister-WaykDenService
