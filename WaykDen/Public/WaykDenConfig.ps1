@@ -78,7 +78,54 @@ function Find-WaykDenConfig
         $ConfigPath = Get-Location
     }
 
+    if ($Env:DEN_CONFIG_PATH) {
+        $ConfigPath = $Env:DEN_CONFIG_PATH
+    }
+
     return $ConfigPath
+}
+
+function Set-WaykDenConfigPath
+{
+    param(
+        [Parameter(Mandatory=$true,Position=0)]
+        [string] $ConfigPath
+    )
+
+    $Env:DEN_CONFIG_PATH = $ConfigPath
+}
+
+function Get-WaykDenPath()
+{
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory,Position=0)]
+        [ValidateSet("ConfigPath","GlobalPath","LocalPath")]
+		[string] $PathType
+	)
+
+    $DisplayName = "Wayk Den"
+    $LowerName = "wayk-den"
+    $CompanyName = "Devolutions"
+	$HomePath = Resolve-Path '~'
+
+	if (Get-IsWindows)	{
+		$LocalPath = $Env:AppData + "\${CompanyName}\${DisplayName}";
+		$GlobalPath = $Env:ProgramData + "\${CompanyName}\${DisplayName}"
+	} elseif ($IsMacOS) {
+		$LocalPath = "$HomePath/Library/Application Support/${DisplayName}"
+		$GlobalPath = "/Library/Application Support/${DisplayName}"
+	} elseif ($IsLinux) {
+		$LocalPath = "$HomePath/.config/${LowerName}"
+		$GlobalPath = "/etc/${LowerName}"
+	}
+
+	switch ($PathType) {
+		'LocalPath' { $LocalPath }
+		'GlobalPath' { $GlobalPath }
+        'ConfigPath' { $GlobalPath }
+		default { throw("Invalid path type: $PathType") }
+	}
 }
 
 function Expand-WaykDenConfigKeys
@@ -468,4 +515,5 @@ function Get-WaykDenConfig
     return $config
 }
 
-Export-ModuleMember -Function New-WaykDenConfig, Set-WaykDenConfig, Get-WaykDenConfig
+Export-ModuleMember -Function New-WaykDenConfig, Set-WaykDenConfig, Get-WaykDenConfig, `
+    Set-WaykDenConfigPath, Get-WaykDenPath

@@ -4,6 +4,7 @@
 . "$PSScriptRoot/../Private/DockerHelper.ps1"
 . "$PSScriptRoot/../Private/CaseHelper.ps1"
 . "$PSScriptRoot/../Private/YamlHelper.ps1"
+. "$PSScriptRoot/../Private/CmdletService.ps1"
 
 function Get-JetImage
 {
@@ -139,7 +140,55 @@ function Find-JetConfig
         $ConfigPath = Get-Location
     }
 
+    if ($Env:JET_CONFIG_PATH) {
+        $ConfigPath = $Env:JET_CONFIG_PATH
+    }
+
     return $ConfigPath
+}
+
+function Set-JetConfigPath
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true,Position=0)]
+        [string] $ConfigPath
+    )
+
+    $Env:JET_CONFIG_PATH = $ConfigPath
+}
+
+function Get-JetRelayPath()
+{
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory,Position=0)]
+        [ValidateSet("ConfigPath","GlobalPath","LocalPath")]
+		[string] $PathType
+	)
+
+    $DisplayName = "Jet Relay"
+    $LowerName = "jet-relay"
+    $CompanyName = "Devolutions"
+	$HomePath = Resolve-Path '~'
+
+	if (Get-IsWindows)	{
+		$LocalPath = $Env:AppData + "\${CompanyName}\${DisplayName}";
+		$GlobalPath = $Env:ProgramData + "\${CompanyName}\${DisplayName}"
+	} elseif ($IsMacOS) {
+		$LocalPath = "$HomePath/Library/Application Support/${DisplayName}"
+		$GlobalPath = "/Library/Application Support/${DisplayName}"
+	} elseif ($IsLinux) {
+		$LocalPath = "$HomePath/.config/${LowerName}"
+		$GlobalPath = "/etc/${LowerName}"
+	}
+
+	switch ($PathType) {
+		'LocalPath' { $LocalPath }
+		'GlobalPath' { $GlobalPath }
+        'ConfigPath' { $GlobalPath }
+		default { throw("Invalid path type: $PathType") }
+	}
 }
 
 function Import-JetCertificate
@@ -225,6 +274,21 @@ function Get-JetService
     return $Service
 }
 
+function Update-JetRelay
+{
+    [CmdletBinding()]
+    param(
+        [string] $ConfigPath
+    )
+
+    $ConfigPath = Find-JetConfig -ConfigPath:$ConfigPath
+    $config = Get-JetConfig -ConfigPath:$ConfigPath
+    Expand-JetConfig -Config $config
+
+    $Service = Get-JetService -ConfigPath:$ConfigPath -Config:$config
+    Request-ContainerImage -Name $Service.Image
+}
+
 function Start-JetRelay
 {
     [CmdletBinding()]
@@ -281,6 +345,59 @@ function Restart-JetRelay
     Start-JetRelay -ConfigPath:$ConfigPath
 }
 
+function Get-JetRelayServiceDefinition()
+{
+    $ServiceName = "JetRelay"
+    $ModuleName = "WaykDen"
+    $DisplayName = "Jet Relay"
+    $CompanyName = "Devolutions"
+    $Description = "Jet relay service"
+
+    return [PSCustomObject]@{
+        ServiceName = $ServiceName
+        DisplayName = $DisplayName
+        Description = $Description
+        CompanyName = $CompanyName
+        ModuleName = $ModuleName
+        StartCommand = "Start-JetRelay"
+        StopCommand = "Stop-JetRelay"
+        WorkingDir = "%ProgramData%\${CompanyName}\${DisplayName}"
+    }
+}
+
+function Register-JetRelayService
+{
+    [CmdletBinding()]
+    param(
+        [string] $ConfigPath,
+        [switch] $Force
+    )
+
+    $ConfigPath = Find-JetConfig -ConfigPath:$ConfigPath
+    $Definition = Get-JetRelayServiceDefinition
+    Register-CmdletService -Definition $Definition -Force:$Force
+
+    $ServiceName = $Definition.ServiceName
+    $ServicePath = [System.Environment]::ExpandEnvironmentVariables($Definition.WorkingDir)
+    Write-Host "`"$ServiceName`" service has been installed to `"$ServicePath`""
+}
+
+function Unregister-JetRelayService
+{
+    [CmdletBinding()]
+    param(
+        [string] $ConfigPath,
+        [switch] $Force
+    )
+
+    $ConfigPath = Find-JetConfig -ConfigPath:$ConfigPath
+    $Definition = Get-JetRelayServiceDefinition
+    Unregister-CmdletService -Definition $Definition -Force:$Force
+}
+
 Export-ModuleMember -Function `
-    Set-JetConfig, Get-JetConfig, Import-JetCertificate, `
-    Start-JetRelay, Stop-JetRelay, Restart-JetRelay
+    Set-JetConfig, Get-JetConfig, `
+    Set-JetConfigPath, Get-JetRelayPath, `
+    Import-JetCertificate, `
+    Start-JetRelay, Stop-JetRelay, Restart-JetRelay, Update-JetRelay, `
+    Register-JetRelayService, Unregister-JetRelayService

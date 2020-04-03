@@ -2,6 +2,7 @@
 . "$PSScriptRoot/../Private/PlatformHelper.ps1"
 . "$PSScriptRoot/../Private/DockerHelper.ps1"
 . "$PSScriptRoot/../Private/TraefikHelper.ps1"
+. "$PSScriptRoot/../Private/CmdletService.ps1"
 
 function Get-WaykDenImage
 {
@@ -407,7 +408,7 @@ function Get-DockerRunCommand
 
     if ($Service.Volumes) {
         foreach ($Volume in $Service.Volumes) {
-            $cmd += @("-v", $Volume)
+            $cmd += @("-v", "`"$Volume`"")
         }
     }
 
@@ -506,6 +507,25 @@ function Start-DockerService
     }
 }
 
+function Update-WaykDen
+{
+    [CmdletBinding()]
+    param(
+        [string] $ConfigPath
+    )
+
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
+    $config = Get-WaykDenConfig -ConfigPath:$ConfigPath
+    Expand-WaykDenConfig -Config $config
+
+    $Platform = $config.DockerPlatform
+    $Services = Get-WaykDenService -ConfigPath:$ConfigPath -Config $config
+
+    foreach ($service in $services) {
+        Request-ContainerImage -Name $Service.Image
+    }
+}
+
 function Start-WaykDen
 {
     [CmdletBinding()]
@@ -587,4 +607,55 @@ function Restart-WaykDen
     Start-WaykDen -ConfigPath:$ConfigPath
 }
 
-Export-ModuleMember -Function Start-WaykDen, Stop-WaykDen, Restart-WaykDen
+function Get-WaykDenServiceDefinition()
+{
+    $ServiceName = "WaykDen"
+    $ModuleName = "WaykDen"
+    $DisplayName = "Wayk Den"
+    $CompanyName = "Devolutions"
+    $Description = "Wayk Den service"
+
+    return [PSCustomObject]@{
+        ServiceName = $ServiceName
+        DisplayName = $DisplayName
+        Description = $Description
+        CompanyName = $CompanyName
+        ModuleName = $ModuleName
+        StartCommand = "Start-WaykDen"
+        StopCommand = "Stop-WaykDen"
+        WorkingDir = "%ProgramData%\${CompanyName}\${DisplayName}"
+    }
+}
+
+function Register-WaykDenService
+{
+    [CmdletBinding()]
+    param(
+        [string] $ConfigPath,
+        [switch] $Force
+    )
+
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
+    $Definition = Get-WaykDenServiceDefinition
+    Register-CmdletService -Definition $Definition -Force:$Force
+
+    $ServiceName = $Definition.ServiceName
+    $ServicePath = [System.Environment]::ExpandEnvironmentVariables($Definition.WorkingDir)
+    Write-Host "`"$ServiceName`" service has been installed to `"$ServicePath`""
+}
+
+function Unregister-WaykDenService
+{
+    [CmdletBinding()]
+    param(
+        [string] $ConfigPath,
+        [switch] $Force
+    )
+
+    $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
+    $Definition = Get-WaykDenServiceDefinition
+    Unregister-CmdletService -Definition $Definition -Force:$Force
+}
+
+Export-ModuleMember -Function Start-WaykDen, Stop-WaykDen, Restart-WaykDen, `
+    Update-WaykDen, Register-WaykDenService, Unregister-WaykDenService
