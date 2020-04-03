@@ -510,6 +510,23 @@ function Start-DockerService
     }
 }
 
+function Test-DockerHost
+{
+    [CmdletBinding()]
+    param()
+
+    if (Get-IsWindows) {
+        $DnsServers = Get-DnsClientServerAddress -AddressFamily IPv4 | `
+            Select-Object -Unique -ExpandProperty ServerAddresses
+
+        if ($DnsServers -Contains '127.0.0.1') {
+            Write-Warning "A DNS server with address 127.0.0.1 is configured on the host."
+            Write-Warning "This is known to cause DNS resolution issues inside containers."
+            Write-Warning "Please use the host IP address from the host network instead."
+        }
+    }
+}
+
 function Update-WaykDen
 {
     [CmdletBinding()]
@@ -540,6 +557,8 @@ function Start-WaykDen
     $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
     $config = Get-WaykDenConfig -ConfigPath:$ConfigPath
     Expand-WaykDenConfig -Config $config
+
+    Test-DockerHost
 
     $Platform = $config.DockerPlatform
     $Services = Get-WaykDenService -ConfigPath:$ConfigPath -Config $config
