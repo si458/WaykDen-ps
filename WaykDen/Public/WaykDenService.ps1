@@ -524,6 +524,22 @@ function Test-DockerHost
             Write-Warning "This is known to cause DNS resolution issues inside containers."
             Write-Warning "Please use the host IP address from the host network instead."
         }
+
+        $SEP = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" | `
+            ForEach-Object { Get-ItemProperty $_.PSPath } | `
+            Where-Object { $_ -Match 'Symantec Endpoint Protection' }
+
+        if ($SEP) {
+            Write-Warning "Symantec Endpoint Protection (SEP) has been detected."
+            Write-Warning "It is known to cause several issues with Docker for Windows."
+            Write-Warning "Removing the 'Application and Device Control' (ADC) component is recommended."
+            Write-Warning "Please refer to the following article for the relevant exclusions:"
+            Write-Warning "https://knowledge.broadcom.com/external/article?legacyId=TECH246815"
+            Write-Warning "You should also add %ProgramData%\docker to the exclusion list:"
+            Write-Warning "https://docs.docker.com/engine/security/antivirus/"
+            Write-Warning "At last, you can refer to the following blog article for further guidance:"
+            Write-Warning "https://mdaslam.wordpress.com/2017/05/23/docker-container-windows-2016-server-with-sep-symantec-endpoint-protection/"
+        }
     }
 }
 
