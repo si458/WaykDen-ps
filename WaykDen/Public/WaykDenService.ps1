@@ -85,8 +85,9 @@ function Get-WaykDenService
 
     $Realm = $config.Realm
     $ExternalUrl = $config.ExternalUrl
+    $ListenerUrl = $config.ListenerUrl
 
-    $url = [System.Uri]::new($config.ListenerUrl)
+    $url = [System.Uri]::new($ListenerUrl)
     $TraefikPort = $url.Port
 
     $MongoUrl = $config.MongoUrl
@@ -252,6 +253,8 @@ function Get-WaykDenService
         $DenServer.PublishAll = $true
     }
     $DenServer.Environment = [ordered]@{
+        "DEN_LISTENER_URL" = $ListenerUrl;
+        "DEN_EXTERNAL_URL" = $ExternalUrl;
         "PICKY_REALM" = $Realm;
         "PICKY_URL" = $PickyUrl;
         "PICKY_EXTERNAL_URL" = "$ExternalUrl/picky";
