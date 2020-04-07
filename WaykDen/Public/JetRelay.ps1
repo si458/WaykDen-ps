@@ -369,12 +369,16 @@ function Register-JetRelayService
 {
     [CmdletBinding()]
     param(
-        [string] $ConfigPath,
+        [string] $ServicePath,
         [switch] $Force
     )
 
-    $ConfigPath = Find-JetConfig -ConfigPath:$ConfigPath
     $Definition = Get-JetRelayServiceDefinition
+
+    if ($ServicePath) {
+        $Definition.WorkingDir = $ServicePath
+    }
+
     Register-CmdletService -Definition $Definition -Force:$Force
 
     $ServiceName = $Definition.ServiceName
@@ -386,12 +390,16 @@ function Unregister-JetRelayService
 {
     [CmdletBinding()]
     param(
-        [string] $ConfigPath,
+        [string] $ServicePath,
         [switch] $Force
     )
 
-    $ConfigPath = Find-JetConfig -ConfigPath:$ConfigPath
     $Definition = Get-JetRelayServiceDefinition
+
+    if ($ServicePath) {
+        $Definition.WorkingDir = $ServicePath
+    }
+
     Unregister-CmdletService -Definition $Definition -Force:$Force
 }
 

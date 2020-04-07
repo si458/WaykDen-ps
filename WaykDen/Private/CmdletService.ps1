@@ -21,9 +21,9 @@ function Register-CmdletService
         $Description = $Definition.Description
         $WorkingDir = $Definition.WorkingDir
 
-        $ServiceDir = [System.Environment]::ExpandEnvironmentVariables($WorkingDir)
-        $BinaryPathName = Join-Path $ServiceDir "${ServiceName}.exe"
-        $ManifestFile = Join-Path $ServiceDir "service.json"
+        $ServicePath = [System.Environment]::ExpandEnvironmentVariables($WorkingDir)
+        $BinaryPathName = Join-Path $ServicePath "${ServiceName}.exe"
+        $ManifestFile = Join-Path $ServicePath "service.json"
 
         $Service = Get-Service | Where-Object { $_.Name -Like $ServiceName }
 
@@ -34,7 +34,7 @@ function Register-CmdletService
         $DependsOn = "Docker"
         $StartupType = "Automatic"
 
-        New-Item -Path $ServiceDir -ItemType 'Directory' -Force | Out-Null
+        New-Item -Path $ServicePath -ItemType 'Directory' -Force | Out-Null
         Copy-Item -Path $Executable -Destination $BinaryPathName -Force
         Set-Content -Path $ManifestFile -Value $($Definition | ConvertTo-Json) -Force
 
@@ -66,9 +66,9 @@ function Unregister-CmdletService
         $ServiceName = $Definition.ServiceName
         $WorkingDir = $Definition.WorkingDir
 
-        $ServiceDir = [System.Environment]::ExpandEnvironmentVariables($WorkingDir)
-        $BinaryPathName = Join-Path $ServiceDir "${ServiceName}.exe"
-        $ManifestFile = Join-Path $ServiceDir "service.json"
+        $ServicePath = [System.Environment]::ExpandEnvironmentVariables($WorkingDir)
+        $BinaryPathName = Join-Path $ServicePath "${ServiceName}.exe"
+        $ManifestFile = Join-Path $ServicePath "service.json"
 
         $Service = Get-Service | Where-Object { $_.Name -Like $ServiceName }
 

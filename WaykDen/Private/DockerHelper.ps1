@@ -274,3 +274,22 @@ function Request-ContainerImage()
 
     Invoke-Expression $cmd | Out-Null
 }
+
+function Get-ContainerImageId()
+{
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $Name
+    )
+
+    if ($Name.StartsWith("library/")) {
+        $Name = $Name -Replace "library/", ""
+    }
+
+    $args = @('docker', 'images', '-q')
+    $args += $Name
+    $cmd = $args -Join " "
+
+    $Id = Invoke-Expression $cmd
+    return $Id
+}

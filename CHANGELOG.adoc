@@ -4,6 +4,12 @@ This document provides a list of notable changes introduced in Wayk Den by relea
 
 == 2020.1.6 (unreleased)
 
+  * Add Wayk Den and Jet relay system service registration (Windows only)
+  * Add check to warn about DNS server being set to 127.0.0.1 on the host
+  * Add check to warn about Symantec Endpoint Protection issues with docker
+  * Add better error handling when Web UI cannot be loaded completely
+  * Add "Update-WaykDen" command to force pulling latest container images
+  * Fix issue with machine names containing special UTF-8 characters
   * Fix https listener on Linux due to broken paths in traefik.toml file
 
 == 2020.1.5 (2020-03-25)

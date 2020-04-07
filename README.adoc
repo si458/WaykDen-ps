@@ -185,6 +185,68 @@ PS > Set-WaykDenConfig -JetRelayUrl https://api.jet-relay.net
 
 Continue your initial configuration, and once you know it is working, come back to the link:docs\getting-started-relay.adoc[Devolutions Jet] page for more information on how to deploy your own relays.
 
+=== System Service
+
+It is possible to register a system service on Windows to automatically call Start-WaykDen / Stop-WaykDen in a given config directory.
+
+Instead of using a local user directory for the configuration files, the service should be installed in a global directory with restricted permissions like this:
+
+[source, sh]
+----
+PS > $ConfigPath = Get-WaykDenPath ConfigPath
+PS > $ConfigPath
+C:\ProgramData\Devolutions\Wayk Den
+PS > New-Item -Path $ConfigPath -Type Directory -Force
+----
+
+The "Get-WaykDenPath ConfigPath" command returns the recommended directory for the current platform where files should be stored.
+
+If you already have a directory with your Wayk Den configuration files, you should move them to the new location. You can then proceed with the service registration:
+
+[source, sh]
+----
+PS > Set-Location $ConfigPath
+PS > Register-WaykDenService -ServicePath $ConfigPath
+"WaykDen" service has been installed to "C:\ProgramData\Devolutions\Wayk Den"
+PS > Get-Service WaykDen
+
+Status   Name               DisplayName
+------   ----               -----------
+Stopped  WaykDen            Wayk Den
+PS > Start-Service WaykDen
+----
+
+Wait for the service to start, this can take some time. If you look at the files in the directory, you should see "WaykDen.exe", which is the service executable, and "WaykDen.log", the service log file:
+
+[source, sh]
+----
+PS > Get-ChildItem
+
+
+    Directory: C:\ProgramData\Devolutions\Wayk Den
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----         4/2/2020   5:21 PM                den-server
+d-----         4/2/2020   5:06 PM                traefik
+-a----         4/7/2020   4:34 PM            314 service.json
+-a----         4/2/2020   5:06 PM            909 wayk-den.yml
+-a----         4/2/2020   5:33 PM         770048 WaykDen.exe
+-a----         4/7/2020   4:07 PM           2753 WaykDen.log
+----
+
+If you encounter issues with Wayk Den not working as expected when launched through the system service, the best way to debug the issue is to go in the same directory as the service and run the "Start-WaykDen" command manually to see what happens.
+
+The system service is a wrapper over the cmdlet. If you need to remove it, you can call the 'Unregister-WaykDenService' function:
+
+[source, sh]
+----
+PS > Unregister-WaykDenService -ServicePath $ConfigPath
+----
+
+You can also update the service wrapper executable when never versions of the cmdlet are published by calling Register-WaykDenService again.
+
 == Data Persistence
 
 Aside from the Wayk Den configuration files, all Wayk Den data is stored inside a https://www.mongodb.com[MongoDB database]. If you do not specify a database, a simple MongoDB container will be launched with a docker volume attached to it. While this is fine for a lot of use cases, using a single MongoDB container instance is not suitable for high availability scenarios.
