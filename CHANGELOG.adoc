@@ -2,7 +2,7 @@
 
 This document provides a list of notable changes introduced in Wayk Den by release.
 
-== 2020.1.6 (unreleased)
+== 2020.1.6 (2020-04-08)
 
   * Add Wayk Den and Jet relay system service registration (Windows only)
   * Add check to warn about DNS server being set to 127.0.0.1 on the host
