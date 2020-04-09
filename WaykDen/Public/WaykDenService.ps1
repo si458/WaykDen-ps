@@ -22,15 +22,29 @@ function Get-WaykDenImage
             "den-redis" = "library/redis:5.0-buster";
         }
     } else {
-        [ordered]@{ # Windows containers
-            "den-lucid" = "devolutions/den-lucid:3.6.5-servercore-ltsc2019";
-            "den-picky" = "devolutions/picky:4.2.1-servercore-ltsc2019";
-            "den-server" = "devolutions/den-server:1.17.0-servercore-ltsc2019";
+        $ServerType = $Env:WINDOWS_CONTAINER_SERVER_TYPE
+        if ($ServerType -eq "nanoserver") {
+            [ordered]@{ # Windows nano server containers
+                "den-lucid" = "devolutions/den-lucid:3.6.5-nanoserver-1809";
+                "den-picky" = "devolutions/picky:4.2.1-nanoserver-1809";
+                "den-server" = "devolutions/den-server:1.17.0-nanoserver-1809";
 
-            "den-mongo" = "library/mongo:4.2-windowsservercore-1809";
-            "den-traefik" = "library/traefik:1.7-windowsservercore-1809";
-            "den-nats" = "library/nats:2.1-windowsservercore-1809";
-            "den-redis" = ""; # not available
+                "den-mongo" = "library/mongo:4.2-windowsservercore-1809";
+                "den-traefik" = "library/traefik:1.7-windowsservercore-1809";
+                "den-nats" = "library/nats:2.1-windowsservercore-1809";
+                "den-redis" = ""; # not available
+            }
+        } else {
+            [ordered]@{ # Windows server core containers
+                "den-lucid" = "devolutions/den-lucid:3.6.5-servercore-ltsc2019";
+                "den-picky" = "devolutions/picky:4.2.1-servercore-ltsc2019";
+                "den-server" = "devolutions/den-server:1.17.0-servercore-ltsc2019";
+
+                "den-mongo" = "library/mongo:4.2-windowsservercore-1809";
+                "den-traefik" = "library/traefik:1.7-windowsservercore-1809";
+                "den-nats" = "library/nats:2.1-windowsservercore-1809";
+                "den-redis" = ""; # not available
+            }
         }
     }
 
@@ -413,6 +427,11 @@ function Get-DockerRunCommand
     if ($Service.Platform -eq 'windows') {
         if ($Service.Isolation -eq 'hyperv') {
             $cmd += "--isolation=hyperv"
+        }
+
+        if ($Service.Image -Like '*-nanoserver-*') {
+            # override default user to allow bind mounts
+            $cmd += @('-u', 'ContainerAdministrator')
         }
     }
 
