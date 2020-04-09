@@ -2,6 +2,11 @@
 
 This document provides a list of notable changes introduced in Wayk Den by release.
 
+== 2020.1.7 (2020-04-09)
+
+  * Fix problem when loading Wayk Den Web UI with null well-known endpoint
+  * Fix system service cmdlet wrapper to use PowerShell encoded commands
+
 == 2020.1.6 (2020-04-08)
 
   * Add Wayk Den and Jet relay system service registration (Windows only)
