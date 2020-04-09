@@ -4,6 +4,7 @@ This document provides a list of notable changes introduced in Wayk Den by relea
 
 == 2020.1.7 (2020-04-09)
 
+  * Add docker isolation (hyperv, process) parameter for Windows containers
   * Fix problem when loading Wayk Den Web UI with null well-known endpoint
   * Fix system service cmdlet wrapper to use PowerShell encoded commands
 

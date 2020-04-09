@@ -14,7 +14,7 @@ function Get-WaykDenImage
         [ordered]@{ # Linux containers
             "den-lucid" = "devolutions/den-lucid:3.6.5-buster";
             "den-picky" = "devolutions/picky:4.2.1-buster";
-            "den-server" = "devolutions/den-server:1.17.0-buster-dev";
+            "den-server" = "devolutions/den-server:1.17.0-buster";
 
             "den-mongo" = "library/mongo:4.2-bionic";
             "den-traefik" = "library/traefik:1.7";
@@ -25,7 +25,7 @@ function Get-WaykDenImage
         [ordered]@{ # Windows containers
             "den-lucid" = "devolutions/den-lucid:3.6.5-servercore-ltsc2019";
             "den-picky" = "devolutions/picky:4.2.1-servercore-ltsc2019";
-            "den-server" = "devolutions/den-server:1.17.0-servercore-ltsc2019-dev";
+            "den-server" = "devolutions/den-server:1.17.0-servercore-ltsc2019";
 
             "den-mongo" = "library/mongo:4.2-windowsservercore-1809";
             "den-traefik" = "library/traefik:1.7-windowsservercore-1809";
@@ -81,6 +81,7 @@ function Get-WaykDenService
     $ConfigPath = Find-WaykDenConfig -ConfigPath:$ConfigPath
 
     $Platform = $config.DockerPlatform
+    $Isolation = $config.DockerIsolation
     $images = Get-WaykDenImage -Platform:$Platform
 
     $Realm = $config.Realm
@@ -89,6 +90,7 @@ function Get-WaykDenService
 
     $url = [System.Uri]::new($ListenerUrl)
     $TraefikPort = $url.Port
+    $ListenerScheme = $url.Scheme
 
     $MongoUrl = $config.MongoUrl
     $MongoVolume = $config.MongoVolume
@@ -106,6 +108,8 @@ function Get-WaykDenService
     $PickyUrl = $config.PickyUrl
     $LucidUrl = $config.LucidUrl
     $DenServerUrl = $config.DenServerUrl
+
+    $RustBacktrace = "1"
 
     if ($Platform -eq "linux") {
         $PathSeparator = "/"
@@ -131,6 +135,7 @@ function Get-WaykDenService
     $DenMongo.ContainerName = 'den-mongo'
     $DenMongo.Image = $images[$DenMongo.ContainerName]
     $DenMongo.Platform = $Platform
+    $DenMongo.Isolation = $Isolation
     $DenMongo.TargetPorts = @(27017)
     if ($DenNetwork -NotMatch "none") {
         $DenMongo.Networks += $DenNetwork
@@ -168,6 +173,7 @@ function Get-WaykDenService
         $DenNats.ContainerName = 'den-nats'
         $DenNats.Image = $images[$DenNats.ContainerName]
         $DenNats.Platform = $Platform
+        $DenNats.Isolation = $Isolation
         if ($DenNetwork -NotMatch "none") {
             $DenNats.Networks += $DenNetwork
         } else {
@@ -182,6 +188,7 @@ function Get-WaykDenService
         $DenRedis.ContainerName = 'den-redis'
         $DenRedis.Image = $images[$DenRedis.ContainerName]
         $DenRedis.Platform = $Platform
+        $DenRedis.Isolation = $Isolation
         if ($DenNetwork -NotMatch "none") {
             $DenRedis.Networks += $DenNetwork
         } else {
@@ -197,6 +204,7 @@ function Get-WaykDenService
     $DenPicky.ContainerName = 'den-picky'
     $DenPicky.Image = $images[$DenPicky.ContainerName]
     $DenPicky.Platform = $Platform
+    $DenPicky.Isolation = $Isolation
     $DenPicky.DependsOn = @("den-mongo")
     $DenPicky.TargetPorts = @(12345)
     if ($DenNetwork -NotMatch "none") {
@@ -208,6 +216,7 @@ function Get-WaykDenService
         "PICKY_REALM" = $Realm;
         "PICKY_API_KEY" = $PickyApiKey;
         "PICKY_DATABASE_URL" = $MongoUrl;
+        "RUST_BACKTRACE" = $RustBacktrace;
     }
     $DenPicky.External = $config.PickyExternal
     $Services += $DenPicky
@@ -217,6 +226,7 @@ function Get-WaykDenService
     $DenLucid.ContainerName = 'den-lucid'
     $DenLucid.Image = $images[$DenLucid.ContainerName]
     $DenLucid.Platform = $Platform
+    $DenLucid.Isolation = $Isolation
     $DenLucid.DependsOn = @("den-mongo")
     $DenLucid.TargetPorts = @(4242)
     if ($DenNetwork -NotMatch "none") {
@@ -235,6 +245,8 @@ function Get-WaykDenService
         "LUCID_ACCOUNT__REFRESH_USER_URL" = "$DenServerUrl/account/refresh";
         "LUCID_ACCOUNT__FORGOT_PASSWORD_URL" = "$DenServerUrl/account/forgot";
         "LUCID_ACCOUNT__SEND_ACTIVATION_EMAIL_URL" = "$DenServerUrl/account/activation";
+        "LUCID_LOCALHOST_LISTENER" = $ListenerScheme;
+        "RUST_BACKTRACE" = $RustBacktrace;
     }
     $DenLucid.Healthcheck = [DockerHealthcheck]::new("curl -sS $LucidUrl/health")
     $DenLucid.External = $config.LucidExternal
@@ -245,6 +257,7 @@ function Get-WaykDenService
     $DenServer.ContainerName = 'den-server'
     $DenServer.Image = $images[$DenServer.ContainerName]
     $DenServer.Platform = $Platform
+    $DenServer.Isolation = $Isolation
     $DenServer.DependsOn = @("den-mongo", 'den-traefik')
     $DenServer.TargetPorts = @(4491, 10255)
     if ($DenNetwork -NotMatch "none") {
@@ -270,6 +283,7 @@ function Get-WaykDenService
         "JET_SERVER_URL" = $JetServerUrl;
         "JET_RELAY_URL" = $JetRelayUrl;
         "DEN_API_KEY" = $DenApiKey;
+        "RUST_BACKTRACE" = $RustBacktrace;
     }
     $DenServer.Volumes = @("$ConfigPath/den-server:$DenServerDataPath`:ro")
     $DenServer.Command = "-l trace"
@@ -304,6 +318,12 @@ function Get-WaykDenService
 
     if (![string]::IsNullOrEmpty($config.LdapServerType)) {
         $DenServer.Environment['LDAP_SERVER_TYPE'] = $config.LdapServerType
+
+        if ($config.LdapCertificateValidation) {
+            $DenServer.Environment['LDAP_CERTIFICATE_VALIDATION'] = 'true'
+        } else {
+            $DenServer.Environment['LDAP_CERTIFICATE_VALIDATION'] = 'false'
+        }
     }
 
     if (![string]::IsNullOrEmpty($config.LdapBaseDn)) {
@@ -312,12 +332,6 @@ function Get-WaykDenService
 
     if (![string]::IsNullOrEmpty($config.LdapBindType)) {
         $DenServer.Environment['LDAP_BIND_TYPE'] = $config.LdapBindType
-    }
-
-    if ($config.LdapCertificateValidation) {
-        $DenServer.Environment['LDAP_CERTIFICATE_VALIDATION'] = 'true'
-    } else {
-        $DenServer.Environment['LDAP_CERTIFICATE_VALIDATION'] = 'false'
     }
 
     if (Test-Path $(Join-Path $ConfigPath 'den-server/ldap-root-ca.pem')) {
@@ -364,6 +378,7 @@ function Get-WaykDenService
     $DenTraefik.ContainerName = 'den-traefik'
     $DenTraefik.Image = $images[$DenTraefik.ContainerName]
     $DenTraefik.Platform = $Platform
+    $DenTraefik.Isolation = $Isolation
     $DenTraefik.TargetPorts = @($TraefikPort)
     if ($DenNetwork -NotMatch "none") {
         $DenTraefik.Networks += $DenNetwork
@@ -394,6 +409,12 @@ function Get-DockerRunCommand
     $cmd += @('--name', $Service.ContainerName)
 
     $cmd += "-d" # detached
+
+    if ($Service.Platform -eq 'windows') {
+        if ($Service.Isolation -eq 'hyperv') {
+            $cmd += "--isolation=hyperv"
+        }
+    }
 
     if ($Service.Networks) {
         foreach ($Network in $Service.Networks) {

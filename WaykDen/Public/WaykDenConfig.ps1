@@ -64,6 +64,7 @@ class WaykDenConfig
     # Docker
     [string] $DockerNetwork
     [string] $DockerPlatform
+    [string] $DockerIsolation
     [string] $DockerHost
     [string] $SyslogServer
 }
@@ -348,6 +349,7 @@ function New-WaykDenConfig
         # Docker
         [string] $DockerNetwork,
         [string] $DockerPlatform,
+        [string] $DockerIsolation,
         [string] $DockerHost,
         [string] $SyslogServer,
 
@@ -449,6 +451,7 @@ function Set-WaykDenConfig
         # Docker
         [string] $DockerNetwork,
         [string] $DockerPlatform,
+        [string] $DockerIsolation,
         [string] $DockerHost,
         [string] $SyslogServer,
 

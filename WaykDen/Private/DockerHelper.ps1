@@ -55,6 +55,7 @@ class DockerService
 {
     [string] $Image
     [string] $Platform
+    [string] $Isolation
     [string] $ContainerName
     [bool] $External
     [string[]] $DependsOn
@@ -72,6 +73,7 @@ class DockerService
     DockerService([DockerService] $other) {
         $this.Image = $other.Image
         $this.Platform = $other.Platform
+        $this.Isolation = $other.Isolation
         $this.ContainerName = $other.ContainerName
 
         $this.External = $other.External
