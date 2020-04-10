@@ -12,9 +12,9 @@ function Get-WaykDenImage
 
     $images = if ($Platform -ne "windows") {
         [ordered]@{ # Linux containers
-            "den-lucid" = "devolutions/den-lucid:3.6.5-buster";
+            "den-lucid" = "devolutions/den-lucid:3.6.6-buster-dev";
             "den-picky" = "devolutions/picky:4.2.1-buster";
-            "den-server" = "devolutions/den-server:1.17.0-buster";
+            "den-server" = "devolutions/den-server:1.18.0-buster-dev";
 
             "den-mongo" = "library/mongo:4.2-bionic";
             "den-traefik" = "library/traefik:1.7";
@@ -23,9 +23,9 @@ function Get-WaykDenImage
         }
     } else {
         [ordered]@{ # Windows containers
-            "den-lucid" = "devolutions/den-lucid:3.6.5-servercore-ltsc2019";
+            "den-lucid" = "devolutions/den-lucid:3.6.6-servercore-ltsc2019-dev";
             "den-picky" = "devolutions/picky:4.2.1-servercore-ltsc2019";
-            "den-server" = "devolutions/den-server:1.17.0-servercore-ltsc2019";
+            "den-server" = "devolutions/den-server:1.18.0-servercore-ltsc2019-dev";
 
             "den-mongo" = "library/mongo:4.2-windowsservercore-1809";
             "den-traefik" = "library/traefik:1.7-windowsservercore-1809";
