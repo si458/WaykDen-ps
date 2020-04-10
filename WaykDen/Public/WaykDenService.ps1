@@ -280,6 +280,7 @@ function Get-WaykDenService
         "DEN_LOGIN_REQUIRED" = "false";
         "DEN_PUBLIC_KEY_FILE" = @($DenServerDataPath, "den-public.pem") -Join $PathSeparator
         "DEN_PRIVATE_KEY_FILE" = @($DenServerDataPath, "den-private.key") -Join $PathSeparator
+        "DEN_HOST_INFO_FILE" = @($DenServerDataPath, "host_info.json") -Join $PathSeparator
         "JET_SERVER_URL" = $JetServerUrl;
         "JET_RELAY_URL" = $JetRelayUrl;
         "DEN_API_KEY" = $DenApiKey;
