@@ -21,6 +21,15 @@ function Import-WaykDenCertificate
     $CertificateData = $result.Certificate
     $PrivateKeyData = $result.PrivateKey
 
+    [string[]] $PemChain = Split-PemChain -Label 'CERTIFICATE' -PemData $CertificateData
+
+    if ($PemChain.Count -eq 1) {
+        Write-Warning "The certificate chain includes only one certificate (leaf certificate)."
+        Write-Warning "The complete chain should also include the intermediate CA certificate."
+        Write-Warning "For more information on certificate configuration, refer to:"
+        Write-Warning "https://github.com/devolutions/WaykDen-ps#certificate-configuration"
+    }
+
     $TraefikPath = Join-Path $ConfigPath "traefik"
     New-Item -Path $TraefikPath -ItemType "Directory" -Force | Out-Null
 

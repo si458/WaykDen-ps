@@ -99,9 +99,9 @@ function Split-PemChain
         [string] $PemData
     )
 
-    $PemChain = @()
+    [string[]] $PemChain = @()
     $PemData | Select-String  -Pattern "(?smi)^-{2,}BEGIN $Label-{2,}.*?-{2,}END $Label-{2,}" `
-        -Allmatches | ForEach-Object {$_.Matches} | ForEach-Object { $PemChain += $_.Value }
+        -Allmatches | ForEach-Object { $_.Matches } | ForEach-Object { $PemChain += $_.Value }
 
     return $PemChain
 }
@@ -141,7 +141,7 @@ function Get-PemCertificate
         $collection = [System.Security.Cryptography.X509Certificates.X509Certificate2Collection]::new()
         $collection.Import($CertificateData, $Password, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
     
-        $PemChain = @()
+        [string[]] $PemChain = @()
         $PrivateKey = $null
     
         foreach ($cert in $collection) {
@@ -152,6 +152,10 @@ function Get-PemCertificate
             $PemChain += $PemCert
         }
     
+        if ($PemChain.Count -eq 0) {
+            throw "Empty certificate chain!"
+        }
+
         if (Get-IsPemCertificateAuthority -PemData $PemChain[0]) {
             [array]::Reverse($PemChain)
         }
@@ -164,7 +168,11 @@ function Get-PemCertificate
         }
     } else {
         $PemData = Get-Content -Path $CertificateFile -Raw
-        $PemChain = Split-PemChain -Label 'CERTIFICATE' -PemData $PemData
+        [string[]] $PemChain = Split-PemChain -Label 'CERTIFICATE' -PemData $PemData
+
+        if ($PemChain.Count -eq 0) {
+            throw "Empty certificate chain!"
+        }
         
         if (Get-IsPemCertificateAuthority -PemData $PemChain[0]) {
             [array]::Reverse($PemChain)
