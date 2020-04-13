@@ -410,6 +410,8 @@ function Get-DockerRunCommand
     $cmd += @('--name', $Service.ContainerName)
 
     $cmd += "-d" # detached
+    
+    $cmd += @('--restart', 'on-failure') # restart container if failure due to crash
 
     if ($Service.Platform -eq 'windows') {
         if ($Service.Isolation -eq 'hyperv') {
